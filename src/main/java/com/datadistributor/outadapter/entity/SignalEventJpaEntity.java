@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "cw014_signal_events")
+@Table(name = "signals")
 @Data
 public class SignalEventJpaEntity {
 

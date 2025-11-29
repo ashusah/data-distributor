@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface SignalEventUseCase {
     List<SignalEvent> getAllSignalEventsOfThisDate(LocalDate date);
+    List<SignalEvent> getAllSignalForCEH(LocalDate date);
 }
