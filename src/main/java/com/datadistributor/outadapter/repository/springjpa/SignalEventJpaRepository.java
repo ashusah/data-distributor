@@ -19,7 +19,7 @@ public interface SignalEventJpaRepository extends JpaRepository<SignalEventJpaEn
         select e
         from SignalEventJpaEntity e
         where e.eventRecordDateTime between :start and :end
-        order by e.eventRecordDateTime asc
+        order by e.uabsEventId asc
         """)
     List<SignalEventJpaEntity> findAllEventsForCEH(@Param("start") LocalDateTime start,
                                                    @Param("end") LocalDateTime end);
@@ -30,7 +30,7 @@ public interface SignalEventJpaRepository extends JpaRepository<SignalEventJpaEn
         select e
         from SignalEventJpaEntity e
         where e.eventRecordDateTime between :start and :end
-        order by e.eventRecordDateTime asc
+        order by e.uabsEventId asc
         """)
     List<SignalEventJpaEntity> findPageForCEH(@Param("start") LocalDateTime start,
                                               @Param("end") LocalDateTime end,
