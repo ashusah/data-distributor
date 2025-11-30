@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="data-distributor" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="data-distributor-app" target="17" />
+      <module name="data-distributor-config" target="17" />
+      <module name="data-distributor-domain" target="17" />
+      <module name="data-distributor-in-adapter" target="17" />
+      <module name="data-distributor-out-adapter" target="17" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
