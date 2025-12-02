@@ -1,13 +1,16 @@
 package com.datadistributor.application.config;
 
+import com.datadistributor.domain.inport.AccountBalanceQueryUseCase;
 import com.datadistributor.domain.inport.InitialCehMappingUseCase;
 import com.datadistributor.domain.inport.InitialCehQueryUseCase;
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
 import com.datadistributor.domain.inport.SignalEventUseCase;
 import com.datadistributor.domain.job.JobProgressTracker;
+import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import com.datadistributor.domain.outport.InitialCehMappingPort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.service.AccountBalanceQueryService;
 import com.datadistributor.domain.service.InitialCehMappingService;
 import com.datadistributor.domain.service.InitialCehQueryService;
 import com.datadistributor.domain.service.SignalEventDomainService;
@@ -48,5 +51,10 @@ public class DistributorConfiguration {
     @Bean
     InitialCehQueryUseCase initialCehQueryUseCase(InitialCehMappingPort port) {
         return new InitialCehQueryService(port);
+    }
+
+    @Bean
+    AccountBalanceQueryUseCase accountBalanceQueryUseCase(AccountBalanceOverviewPort port) {
+        return new AccountBalanceQueryService(port);
     }
 }

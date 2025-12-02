@@ -1,6 +1,7 @@
 package com.datadistributor.outadapter.web;
 
 import com.datadistributor.domain.SignalEvent;
+import com.datadistributor.domain.inport.AccountBalanceQueryUseCase;
 import com.datadistributor.domain.inport.InitialCehQueryUseCase;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
@@ -39,6 +40,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   private final WebClient webClient;
   private final InitialCehMappingUseCase initialCehMappingUseCase;
   private final InitialCehQueryUseCase initialCehQueryUseCase;
+  private final AccountBalanceQueryUseCase accountBalanceQueryUseCase;
   private final SignalAuditRepository signalAuditRepository;
   private final CircuitBreaker circuitBreaker;
   private final int maxConcurrentRequests;
@@ -50,12 +52,14 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   public SignalEventBatchSender(WebClient webClient,
                                 InitialCehMappingUseCase initialCehMappingUseCase,
                                 InitialCehQueryUseCase initialCehQueryUseCase,
+                                AccountBalanceQueryUseCase accountBalanceQueryUseCase,
                                 SignalAuditRepository signalAuditRepository,
                                 CircuitBreakerRegistry circuitBreakerRegistry,
                                 @Value("${data-distributor.processing.rate-limit:50}") int maxConcurrentRequests) {
     this.webClient = webClient;
     this.initialCehMappingUseCase = initialCehMappingUseCase;
     this.initialCehQueryUseCase = initialCehQueryUseCase;
+    this.accountBalanceQueryUseCase = accountBalanceQueryUseCase;
     this.signalAuditRepository = signalAuditRepository;
     this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("signalEventApi");
     this.maxConcurrentRequests = Math.max(1, maxConcurrentRequests);
@@ -256,9 +260,12 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     if (event != null && "OVERLIMIT_signal".equalsIgnoreCase(event.getEventStatus())) {
       initialEventId = initialCehQueryUseCase.findInitialCehId(event.getSignalId()).orElse(null);
     }
+    Long customerId = accountBalanceQueryUseCase
+        .findBcNumberByAgreementId(event.getAgreementId())
+        .orElse(null);
     return new SignalEventPayload(
         event.getAgreementId(),
-        event.getAgreementId(), // customerId uses agreementId for now
+        customerId,
         initialEventId,
         "UABS",
         "0bfe5670-457d-4872-a1f1-efe4db39f099",
