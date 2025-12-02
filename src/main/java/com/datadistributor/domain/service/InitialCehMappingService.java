@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class InitialCehMappingService implements InitialCehMappingUseCase {
 
-  private static final String NEW_OVERLIMIT_STATUS = "NEW_OVERLIMIT";
+  private static final String OVERLIMIT_STATUS = "OVERLIMIT_SIGNAL";
   private final InitialCehMappingPort initialCehMappingPort;
 
   @Override
@@ -18,7 +18,10 @@ public class InitialCehMappingService implements InitialCehMappingUseCase {
     if (event == null || event.getEventStatus() == null) {
       return;
     }
-    if (!NEW_OVERLIMIT_STATUS.equalsIgnoreCase(event.getEventStatus())) {
+    if (!OVERLIMIT_STATUS.equalsIgnoreCase(event.getEventStatus())) {
+      return;
+    }
+    if (initialCehMappingPort.findInitialCehId(event.getSignalId()).isPresent()) {
       return;
     }
     try {

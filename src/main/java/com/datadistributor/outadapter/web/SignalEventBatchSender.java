@@ -256,10 +256,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   }
 
   private SignalEventPayload toPayload(SignalEvent event) {
-    String initialEventId = null;
-    if (event != null && "OVERLIMIT_signal".equalsIgnoreCase(event.getEventStatus())) {
-      initialEventId = initialCehQueryUseCase.findInitialCehId(event.getSignalId()).orElse(null);
-    }
+    String initialEventId = initialCehQueryUseCase.findInitialCehId(event.getSignalId()).orElse(null);
     Long customerId = accountBalanceQueryUseCase
         .findBcNumberByAgreementId(event.getAgreementId())
         .orElse(null);
