@@ -1,0 +1,19 @@
+package com.datadistributor.outadapter.entity;
+
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "ceh_response_initial_event_id")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CehResponseInitialEvent {
+
+  @EmbeddedId
+  private CehResponseInitialEventId id;
+}
