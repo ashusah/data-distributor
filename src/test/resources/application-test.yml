@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MSSQLServer
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  main:
+    allow-bean-definition-overriding: true
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  sql:
+    init:
+      mode: never
+
+data-distributor:
+  external-api:
+    base-url: http://localhost:8081
+  processing:
+    batch-size: 3
+    rate-limit: 5
