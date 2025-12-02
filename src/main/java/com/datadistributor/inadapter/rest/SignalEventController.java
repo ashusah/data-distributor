@@ -38,7 +38,7 @@ public class SignalEventController {
   @PostMapping("/process-async")
   public ResponseEntity<JobResult> processAsync(@RequestParam("date") @NotNull LocalDate date) {
     String jobId = UUID.randomUUID().toString();
-    JobResult accepted = new JobResult(0, 0, "Job accepted with id " + jobId);
+    JobResult accepted = new JobResult(0, 0, 0, "Job accepted with id " + jobId);
     jobStatusStore.record(jobId, accepted);
 
     taskExecutor.submit(() -> {

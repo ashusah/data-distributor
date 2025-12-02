@@ -5,9 +5,11 @@ import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.job.JobProgressTracker;
 import com.datadistributor.domain.job.JobResult;
+import com.datadistributor.domain.outport.DeliveryReportPublisher;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
+import com.datadistributor.domain.report.DeliveryReport;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -27,32 +29,35 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
   private final SignalAuditQueryPort signalAuditQueryPort;
   private final int batchSize;
   private final JobProgressTracker jobProgressTracker;
+  private final DeliveryReportPublisher deliveryReportPublisher;
 
   public SignalEventProcessingService(SignalEventRepository signalEventRepository,
                                       SignalEventBatchPort signalEventBatchPort,
                                       SignalAuditQueryPort signalAuditQueryPort,
                                       int batchSize,
-                                      JobProgressTracker jobProgressTracker) {
+                                      JobProgressTracker jobProgressTracker,
+                                      DeliveryReportPublisher deliveryReportPublisher) {
     this.signalEventRepository = signalEventRepository;
     this.signalEventBatchPort = signalEventBatchPort;
     this.signalAuditQueryPort = signalAuditQueryPort;
     this.batchSize = Math.max(1, batchSize);
     this.jobProgressTracker = jobProgressTracker;
+    this.deliveryReportPublisher = deliveryReportPublisher;
   }
 
   @Override
   public JobResult processEventsForDate(String jobId, LocalDate date) {
     if (date == null) {
-      return new JobResult(0, 0, "Date is required");
+      return new JobResult(0, 0, 0, "Date is required");
     }
     Optional<String> validationError = validatePriorEvents(date);
     if (validationError.isPresent()) {
       log.error("LOG_003: Batch aborted as previous events are pending for date {} | reason={}", date, validationError.get());
-      return new JobResult(0, 0, validationError.get());
+      return new JobResult(0, 0, 0, validationError.get());
     }
     long totalCount = signalEventRepository.countSignalEventsForCEH(date);
     if (totalCount == 0) {
-      return new JobResult(0, 0, "No signal events found for date " + date);
+      return new JobResult(0, 0, 0, "No signal events found for date " + date);
     }
 
     int totalBatches = (int) Math.ceil((double) totalCount / batchSize);
@@ -75,9 +80,10 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
 
     attachProgressLogging(progress, trackedBatches);
 
-    JobResult result = awaitJobCompletion(trackedBatches, "Processing complete for " + date);
+    JobResult result = awaitJobCompletion(trackedBatches, "Processing complete for " + date, totalCount);
     log.info("✅ Processing finished for {}. success={} failure={}",
         date, result.getSuccessCount(), result.getFailureCount());
+    publishReport(date, result);
     return result;
   }
 
@@ -99,9 +105,9 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
             jobProgressTracker.onBatchCompletion(progress, batch.number(), batch.size(), result)));
   }
 
-  private JobResult awaitJobCompletion(List<TrackedBatch> trackedBatches, String message) {
+  private JobResult awaitJobCompletion(List<TrackedBatch> trackedBatches, String message, long totalCount) {
     if (trackedBatches.isEmpty()) {
-      return new JobResult(0, 0, message);
+      return new JobResult(0, 0, totalCount, message);
     }
 
     List<CompletableFuture<BatchResult>> futures = trackedBatches.stream()
@@ -123,7 +129,7 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
         .mapToInt(BatchResult::failureCount)
         .sum();
 
-    return new JobResult(success, failure, message);
+    return new JobResult(success, failure, totalCount, message);
   }
 
   private record TrackedBatch(CompletableFuture<BatchResult> future, int number, int size) {
@@ -164,5 +170,37 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
         + ". Prior event not successful for uabsEventIds=[" + ids + "]";
     log.warn(message);
     return Optional.of(message);
+  }
+
+  private void publishReport(LocalDate date, JobResult result) {
+    if (deliveryReportPublisher == null) {
+      return;
+    }
+    try {
+      String content = buildReportContent(date, result);
+      DeliveryReport report = DeliveryReport.builder()
+          .date(date)
+          .totalEvents(result.getTotalCount())
+          .successEvents(result.getSuccessCount())
+          .failedEvents(result.getFailureCount())
+          .content(content)
+          .build();
+      deliveryReportPublisher.publish(report);
+    } catch (Exception ex) {
+      log.error("Failed to publish delivery report for {}: {}", date, ex.getMessage(), ex);
+    }
+  }
+
+  private String buildReportContent(LocalDate date, JobResult result) {
+    return """
+        UABS DELIVERY TO CEH REPORT
+        Total number of events for Date %s = %d
+        Total number of events sent to CEH with PASS status- %d
+        Total number of events not sent to CEH (with FAIL status)- %d
+        """.formatted(
+        date,
+        result.getTotalCount(),
+        result.getSuccessCount(),
+        result.getFailureCount());
   }
 }

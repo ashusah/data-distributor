@@ -16,6 +16,7 @@ public class DataDistributorProperties {
   private Audit audit = new Audit();
   private Http http = new Http();
   private Azure azure = new Azure();
+  private Storage storage = new Storage();
 
   @Data
   public static class ExternalApi {
@@ -79,5 +80,13 @@ public class DataDistributorProperties {
       private String certificatePassword;
       private String clientId;
     }
+  }
+
+  @Data
+  public static class Storage {
+    private boolean enabled = false;
+    private String connectionString;
+    private String container = "reports";
+    private String folder = "ceh";
   }
 }
