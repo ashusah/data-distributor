@@ -2,9 +2,13 @@ package com.datadistributor.application.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 
 @Data
 @ConfigurationProperties(prefix = "data-distributor")
+@Validated
 public class DataDistributorProperties {
 
   private ExternalApi externalApi = new ExternalApi();
@@ -15,27 +19,38 @@ public class DataDistributorProperties {
 
   @Data
   public static class ExternalApi {
+    @NotBlank
     private String baseUrl;
     private String writeSignalPath = "/create-signal/write-signal";
     private String publisher = "UABS";
     private String publisherId = "0bfe5670-457d-4872-a1f1-efe4db39f099";
+    @Min(1)
     private long requestTimeoutSeconds = 15;
     private boolean syncEnabled = false;
     private Retry retry = new Retry();
 
     @Data
     public static class Retry {
+      @Min(0)
       private int attempts = 3;
+      @Min(0)
       private long backoffSeconds = 5;
+      @Min(0)
       private long maxBackoffSeconds = 15;
     }
   }
 
   @Data
   public static class Processing {
+    @Min(1)
     private int batchSize = 300;
+    @Min(1)
+    private int pageSize = 1000;
+    @Min(1)
     private int rateLimit = 20;
+    @Min(0)
     private long minUnauthorizedDebitBalance = 250;
+    @Min(0)
     private int bookDateLookbackDays = 5;
   }
 

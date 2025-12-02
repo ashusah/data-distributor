@@ -16,7 +16,6 @@ import com.datadistributor.domain.service.InitialCehMappingService;
 import com.datadistributor.domain.service.InitialCehQueryService;
 import com.datadistributor.domain.service.SignalEventDomainService;
 import com.datadistributor.domain.service.SignalEventProcessingService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -27,8 +26,8 @@ public class DistributorConfiguration {
 
     @Bean
     SignalEventUseCase getSignalEventUseCase(SignalEventRepository signalEventRepository,
-                                            @Value("${data-distributor.processing.page-size:1000}") int pageSize) {
-        return new SignalEventDomainService(signalEventRepository, pageSize);
+                                            DataDistributorProperties properties) {
+        return new SignalEventDomainService(signalEventRepository, properties.getProcessing().getPageSize());
     }
 
     @Bean
@@ -42,9 +41,14 @@ public class DistributorConfiguration {
         SignalEventBatchPort batchPort,
         SignalAuditQueryPort signalAuditQueryPort,
         JobProgressTracker jobProgressTracker,
-        @Value("${data-distributor.processing.batch-size:100}") int batchSize
+        DataDistributorProperties properties
     ) {
-        return new SignalEventProcessingService(repository, batchPort, signalAuditQueryPort, batchSize, jobProgressTracker);
+        return new SignalEventProcessingService(
+            repository,
+            batchPort,
+            signalAuditQueryPort,
+            properties.getProcessing().getBatchSize(),
+            jobProgressTracker);
     }
 
     @Bean
