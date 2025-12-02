@@ -47,6 +47,7 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
     }
     Optional<String> validationError = validatePriorEvents(date);
     if (validationError.isPresent()) {
+      log.error("LOG_003: Batch aborted as previous events are pending for date {} | reason={}", date, validationError.get());
       return new JobResult(0, 0, validationError.get());
     }
     long totalCount = signalEventRepository.countSignalEventsForCEH(date);
