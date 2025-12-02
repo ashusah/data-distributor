@@ -2,8 +2,8 @@ package com.datadistributor.outadapter.report;
 
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.outport.DeliveryReportPublisher;
+import com.datadistributor.domain.outport.FileStoragePort;
 import com.datadistributor.domain.report.DeliveryReport;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
@@ -11,12 +11,12 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class AzureBlobReportPublisher implements DeliveryReportPublisher {
 
-  private final AzureBlobStorageClient storageClient;
+  private final FileStoragePort storageClient;
   private final DataDistributorProperties.Storage storage;
 
-  public AzureBlobReportPublisher(DataDistributorProperties properties) {
+  public AzureBlobReportPublisher(DataDistributorProperties properties, FileStoragePort storageClient) {
     this.storage = properties.getStorage();
-    this.storageClient = new AzureBlobStorageClient(properties);
+    this.storageClient = storageClient;
   }
 
   @Override

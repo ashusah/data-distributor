@@ -10,6 +10,7 @@ import com.datadistributor.domain.outport.DeliveryReportPublisher;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import com.datadistributor.domain.outport.InitialCehMappingPort;
+import com.datadistributor.domain.outport.FileStoragePort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
 import com.datadistributor.domain.service.AccountBalanceQueryService;
@@ -20,6 +21,7 @@ import com.datadistributor.domain.service.SignalEventDomainService;
 import com.datadistributor.domain.service.SignalEventProcessingService;
 import com.datadistributor.outadapter.report.AzureBlobReportPublisher;
 import com.datadistributor.outadapter.report.AzureBlobStorageClient;
+import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -73,19 +75,24 @@ public class DistributorConfiguration {
     }
 
     @Bean
-    DeliveryReportPublisher deliveryReportPublisher(DataDistributorProperties properties) {
-        return new AzureBlobReportPublisher(properties);
+    DeliveryReportPublisher deliveryReportPublisher(DataDistributorProperties properties, FileStoragePort fileStoragePort) {
+        return new AzureBlobReportPublisher(properties, fileStoragePort);
     }
 
     @Bean
-    AzureBlobStorageClient azureBlobStorageClient(DataDistributorProperties properties) {
+    FileStoragePort fileStoragePort(DataDistributorProperties properties) {
         return new AzureBlobStorageClient(properties);
     }
 
     @Bean
     DialSignalDataExportService dialSignalDataExportService(SignalEventUseCase signalEventUseCase,
-                                                           AzureBlobStorageClient storageClient,
+                                                           FileStoragePort storageClient,
                                                            DataDistributorProperties properties) {
         return new DialSignalDataExportService(signalEventUseCase, storageClient, properties);
+    }
+
+    @Bean
+    Clock systemClock() {
+        return Clock.systemDefaultZone();
     }
 }

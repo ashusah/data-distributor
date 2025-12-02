@@ -5,12 +5,13 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.datadistributor.application.config.DataDistributorProperties;
+import com.datadistributor.domain.outport.FileStoragePort;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 @Slf4j
-public class AzureBlobStorageClient {
+public class AzureBlobStorageClient implements FileStoragePort {
 
   private final DataDistributorProperties.Storage storage;
   private final BlobServiceClient serviceClient;
@@ -20,6 +21,7 @@ public class AzureBlobStorageClient {
     this.serviceClient = buildClient(storage);
   }
 
+  @Override
   public void upload(String folder, String fileName, String content) {
     if (!isEnabled()) {
       log.debug("Storage disabled; skipping upload for {}", fileName);
