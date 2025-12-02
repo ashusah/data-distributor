@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 
 @Component
 @RequiredArgsConstructor
@@ -14,12 +15,14 @@ import org.springframework.stereotype.Component;
 public class SignalAuditService {
 
   private final SignalAuditRepository signalAuditRepository;
+  @Value("${data-distributor.audit.consumer-id:1}")
+  private long consumerId;
 
   public void persistAudit(SignalEvent event, String status, String responseCode, String message) {
     SignalAuditJpaEntity audit = new SignalAuditJpaEntity();
     audit.setSignalId(event.getSignalId());
     audit.setUabsEventId(event.getUabsEventId());
-    audit.setConsumerId(1L);
+    audit.setConsumerId(consumerId);
     audit.setAgreementId(event.getAgreementId());
     audit.setUnauthorizedDebitBalance(
         event.getUnauthorizedDebitBalance() == null ? 0L : event.getUnauthorizedDebitBalance());

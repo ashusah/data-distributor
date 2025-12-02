@@ -9,19 +9,25 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class SignalEventRepositoryAdapter implements SignalEventRepository {
-    private static final long MIN_UNAUTHORIZED_DEBIT_BALANCE = 250L;
-    private static final int BOOK_DATE_LOOKBACK_DAYS = 5;
 
+    private final long minUnauthorizedDebitBalance;
+    private final int bookDateLookbackDays;
     private final SignalEventJpaRepository signalEventJpaRepository;
     private final SignalEventMapper signalEventMapper;
-    public SignalEventRepositoryAdapter(SignalEventJpaRepository signalEventJpaRepository, SignalEventMapper signalEventMapper) {
+    public SignalEventRepositoryAdapter(SignalEventJpaRepository signalEventJpaRepository,
+                                        SignalEventMapper signalEventMapper,
+                                        @Value("${data-distributor.processing.min-unauthorized-debit-balance:250}") long minUnauthorizedDebitBalance,
+                                        @Value("${data-distributor.processing.book-date-lookback-days:5}") int bookDateLookbackDays) {
         this.signalEventJpaRepository = signalEventJpaRepository;
         this.signalEventMapper = signalEventMapper;
+        this.minUnauthorizedDebitBalance = minUnauthorizedDebitBalance;
+        this.bookDateLookbackDays = bookDateLookbackDays;
     }
 
     @Override
@@ -36,9 +42,9 @@ public class SignalEventRepositoryAdapter implements SignalEventRepository {
     public List<SignalEvent> getSignalEventsForCEH(LocalDate date, int page, int size) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(LocalTime.MAX);
-        LocalDate bookDateTarget = date.minusDays(BOOK_DATE_LOOKBACK_DAYS);
+        LocalDate bookDateTarget = date.minusDays(bookDateLookbackDays);
         List<SignalEventJpaEntity> eventEntities = signalEventJpaRepository.findPageForCEH(
-            start, end, MIN_UNAUTHORIZED_DEBIT_BALANCE, bookDateTarget, PageRequest.of(page, size));
+            start, end, minUnauthorizedDebitBalance, bookDateTarget, PageRequest.of(page, size));
         return signalEventMapper.toDomain(eventEntities);
     }
 
@@ -46,9 +52,9 @@ public class SignalEventRepositoryAdapter implements SignalEventRepository {
     public long countSignalEventsForCEH(LocalDate date) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(LocalTime.MAX);
-        LocalDate bookDateTarget = date.minusDays(BOOK_DATE_LOOKBACK_DAYS);
+        LocalDate bookDateTarget = date.minusDays(bookDateLookbackDays);
         return signalEventJpaRepository.countEligibleForCEH(
-            start, end, MIN_UNAUTHORIZED_DEBIT_BALANCE, bookDateTarget);
+            start, end, minUnauthorizedDebitBalance, bookDateTarget);
     }
 
     @Override
