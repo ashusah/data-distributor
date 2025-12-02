@@ -1,6 +1,5 @@
 package com.datadistributor.outadapter.web;
 
-import java.util.Map;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,5 +11,5 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface SignalEventFeignClient {
 
   @PostMapping("${data-distributor.external-api.write-signal-path:/create-signal/write-signal}")
-  Map<String, Object> postSignalEvent(@RequestBody Map<String, Object> payload);
+  SignalEventResponse postSignalEvent(@RequestBody SignalEventPayload payload);
 }

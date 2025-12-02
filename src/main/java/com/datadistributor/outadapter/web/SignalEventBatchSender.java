@@ -10,6 +10,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -117,9 +118,11 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   }
 
   private Map<String, Object> sendWithFeign(SignalEvent event) {
-    Map<String, Object> response = feignClient.postSignalEvent(payloadFactory.buildPayload(event));
-    handleSuccess(event, new ApiResponse(response, 200));
-    return response;
+    SignalEventPayload payload = payloadFactory.buildPayload(event);
+    SignalEventResponse response = feignClient.postSignalEvent(payload);
+    Map<String, Object> body = toResponseBody(response);
+    handleSuccess(event, new ApiResponse(body, 200));
+    return body;
   }
 
   private Retry buildRetrySpec(long uabsEventId) {
@@ -238,6 +241,17 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
       return defaultReason;
     }
     return cls.length() > 32 ? cls.substring(0, 32) : cls;
+  }
+
+  private Map<String, Object> toResponseBody(SignalEventResponse response) {
+    if (response == null) {
+      return Collections.emptyMap();
+    }
+    Map<String, Object> body = new HashMap<>();
+    if (response.cehEventId() != null) {
+      body.put("ceh_event_id", response.cehEventId());
+    }
+    return body;
   }
 
   private record ApiResponse(Map<String, Object> body, int statusCode) {
