@@ -92,7 +92,8 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
         .timeout(Duration.ofSeconds(15))
         .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
         .retryWhen(buildRetrySpec(event.getUabsEventId()))
-        .flatMap(response -> recordSuccessAudit(event, response))
+        .doOnSuccess(response -> handleSuccess(event, response))
+        .map(response -> response != null && response.body().get("ceh_event_id") != null)
         .doOnError(ex -> handleException(event, ex))
         .onErrorReturn(false);
   }
@@ -125,23 +126,25 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     return false;
   }
 
-  private Mono<Boolean> recordSuccessAudit(SignalEvent event, ApiResponse response) {
-    try {
-      Object ceh = response == null ? null : response.body().get("ceh_event_id");
-      if (ceh != null) {
-        long cehId = parseLongSafely(ceh);
+  private void handleSuccess(SignalEvent event, ApiResponse response) {
+    Object ceh = response == null ? null : response.body().get("ceh_event_id");
+    if (ceh != null) {
+      long cehId = parseLongSafely(ceh);
+      try {
         persistAudit(event, "PASS", String.valueOf(response.statusCode()), "ceh_event_id=" + cehId);
-        log.info("✅ Posted uabsEventId={} | ceh_event_id={} | thread={}",
-            event.getUabsEventId(), cehId, Thread.currentThread().getName());
-        return Mono.just(true);
-      } else {
-        persistAudit(event, "FAIL", String.valueOf(response.statusCode()), "NO_CEH_EVENT_ID");
-        log.warn("⚠️ No ceh_event_id returned for uabsEventId={} | thread={}",
-            event.getUabsEventId(), Thread.currentThread().getName());
-        return Mono.just(false);
+      } catch (Exception ex) {
+        logAuditFailure(event, ex);
       }
-    } catch (Exception ex) {
-      return Mono.error(ex);
+      log.info("✅ Posted uabsEventId={} | ceh_event_id={} | thread={}",
+          event.getUabsEventId(), cehId, Thread.currentThread().getName());
+    } else {
+      try {
+        persistAudit(event, "FAIL", String.valueOf(response.statusCode()), "NO_CEH_EVENT_ID");
+      } catch (Exception ex) {
+        logAuditFailure(event, ex);
+      }
+      log.warn("⚠️ No ceh_event_id returned for uabsEventId={} | thread={}",
+          event.getUabsEventId(), Thread.currentThread().getName());
     }
   }
 
@@ -186,7 +189,11 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
 
     log.warn("💾 Persisting FAIL for uabsEventId={} | status={} | reason={} | error={}",
         event.getUabsEventId(), status, reason, ex.toString());
-    persistAudit(event, status, responseCode, ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    try {
+      persistAudit(event, status, responseCode, ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    } catch (Exception auditEx) {
+      logAuditFailure(event, auditEx);
+    }
 
     log.error("❌ Final failure for uabsEventId={} | status={} | error={} | thread={}",
         event.getUabsEventId(), status, ex.toString(), Thread.currentThread().getName());
@@ -226,6 +233,13 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     if (value == null) return "";
     if (value.length() <= max) return value;
     return value.substring(0, max);
+  }
+
+  private void logAuditFailure(SignalEvent event, Exception ex) {
+    log.error("LOG001- Audit Record uabsEventId={} failed to be persisted: {}",
+        event == null ? "unknown" : event.getUabsEventId(),
+        ex.toString(),
+        ex);
   }
 
   private record ApiResponse(Map<String, Object> body, int statusCode) {
