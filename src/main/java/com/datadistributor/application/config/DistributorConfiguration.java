@@ -15,9 +15,11 @@ import com.datadistributor.domain.outport.SignalEventRepository;
 import com.datadistributor.domain.service.AccountBalanceQueryService;
 import com.datadistributor.domain.service.InitialCehMappingService;
 import com.datadistributor.domain.service.InitialCehQueryService;
+import com.datadistributor.domain.service.DialSignalDataExportService;
 import com.datadistributor.domain.service.SignalEventDomainService;
 import com.datadistributor.domain.service.SignalEventProcessingService;
 import com.datadistributor.outadapter.report.AzureBlobReportPublisher;
+import com.datadistributor.outadapter.report.AzureBlobStorageClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -73,5 +75,17 @@ public class DistributorConfiguration {
     @Bean
     DeliveryReportPublisher deliveryReportPublisher(DataDistributorProperties properties) {
         return new AzureBlobReportPublisher(properties);
+    }
+
+    @Bean
+    AzureBlobStorageClient azureBlobStorageClient(DataDistributorProperties properties) {
+        return new AzureBlobStorageClient(properties);
+    }
+
+    @Bean
+    DialSignalDataExportService dialSignalDataExportService(SignalEventUseCase signalEventUseCase,
+                                                           AzureBlobStorageClient storageClient,
+                                                           DataDistributorProperties properties) {
+        return new DialSignalDataExportService(signalEventUseCase, storageClient, properties);
     }
 }

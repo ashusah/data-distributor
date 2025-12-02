@@ -88,5 +88,7 @@ public class DataDistributorProperties {
     private String connectionString;
     private String container = "reports";
     private String folder = "ceh";
+    private String dialFolder = "dial";
+    private String dialFilePrefix = "dial-signal-data";
   }
 }
