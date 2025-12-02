@@ -22,6 +22,7 @@
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/outadapter/repository/springjpa/SignalEventJpaRepository.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/outadapter/repository/adapter/AccountBalanceOverviewRepositoryAdapter.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/domain/outport/AccountBalanceOverviewPort.java
+/home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/application/security/KeyVaultSslContextProvider.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/domain/inport/SignalEventUseCase.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/outadapter/entity/SignalEventJpaEntity.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/inadapter/rest/SignalEventController.java
@@ -32,6 +33,7 @@
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/outadapter/entity/SignalAuditJpaEntity.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/outadapter/web/SignalAuditService.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/domain/outport/InitialCehMappingPort.java
+/home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/application/security/SslContextProvider.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/domain/inport/InitialCehMappingUseCase.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/outadapter/repository/adapter/InitialCehMappingRepositoryAdapter.java
 /home/ashu/git/codex/data-distributor/src/main/java/com/datadistributor/domain/service/AccountBalanceQueryService.java

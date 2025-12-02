@@ -4,6 +4,7 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.SecretClientBuilder;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
+import com.datadistributor.application.config.DataDistributorProperties;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.ByteArrayInputStream;
@@ -13,37 +14,25 @@ import java.util.Optional;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
 public class KeyVaultSslContextProvider implements SslContextProvider {
 
-  private final boolean enabled;
-  private final String vaultUrl;
-  private final String certificateName;
-  private final String certificatePassword;
-  private final String managedIdentityClientId;
+  private final DataDistributorProperties properties;
 
   private volatile Optional<SslContext> cachedContext = Optional.empty();
 
   public KeyVaultSslContextProvider(
-      @Value("${azure.keyvault.enabled:false}") boolean enabled,
-      @Value("${azure.keyvault.vault-url:}") String vaultUrl,
-      @Value("${azure.keyvault.certificate-name:}") String certificateName,
-      @Value("${azure.keyvault.certificate-password:}") String certificatePassword,
-      @Value("${azure.keyvault.client-id:}") String managedIdentityClientId) {
-    this.enabled = enabled;
-    this.vaultUrl = vaultUrl;
-    this.certificateName = certificateName;
-    this.certificatePassword = certificatePassword;
-    this.managedIdentityClientId = managedIdentityClientId;
+      DataDistributorProperties properties) {
+    this.properties = properties;
   }
 
   @Override
   public Optional<SslContext> sslContext() {
-    if (!enabled) {
+    var kv = properties.getAzure().getKeyvault();
+    if (!kv.isEnabled()) {
       return Optional.empty();
     }
     if (cachedContext.isPresent()) {
@@ -60,12 +49,21 @@ public class KeyVaultSslContextProvider implements SslContextProvider {
 
   private Optional<SslContext> loadFromKeyVault() {
     try {
+      var kv = properties.getAzure().getKeyvault();
+      boolean enabled = kv.isEnabled();
+      if (!enabled) return Optional.empty();
+
+      String vaultUrl = kv.getVaultUrl();
+      String certificateName = kv.getCertificateName();
+      String certificatePassword = kv.getCertificatePassword();
+
       if (vaultUrl == null || vaultUrl.isBlank() || certificateName == null || certificateName.isBlank()) {
         log.warn("KeyVault SSL context not loaded: vaultUrl or certificateName missing");
         return Optional.empty();
       }
 
       var credentialBuilder = new DefaultAzureCredentialBuilder();
+      String managedIdentityClientId = kv.getClientId();
       if (managedIdentityClientId != null && !managedIdentityClientId.isBlank()) {
         credentialBuilder = credentialBuilder.managedIdentityClientId(managedIdentityClientId);
       }

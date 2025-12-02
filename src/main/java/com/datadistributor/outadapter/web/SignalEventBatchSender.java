@@ -4,6 +4,7 @@ import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.InitialCehMappingUseCase;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
+import com.datadistributor.application.config.DataDistributorProperties;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
@@ -16,7 +17,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -36,39 +36,24 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   private final InitialCehMappingUseCase initialCehMappingUseCase;
   private final SignalEventPayloadFactory payloadFactory;
   private final SignalAuditService signalAuditService;
+  private final DataDistributorProperties properties;
   private final CircuitBreaker circuitBreaker;
   private final int maxConcurrentRequests;
   private static final AtomicLong SEND_SEQUENCE = new AtomicLong();
-  private final long requestTimeoutSeconds;
-  private final int retryAttempts;
-  private final long retryBackoffSeconds;
-  private final long retryMaxBackoffSeconds;
-
-  @Value("${data-distributor.external-api.base-url}")
-  private String externalApiBaseUrl;
-  @Value("${data-distributor.external-api.write-signal-path:/create-signal/write-signal}")
-  private String writeSignalPath;
 
   public SignalEventBatchSender(WebClient webClient,
                                 InitialCehMappingUseCase initialCehMappingUseCase,
                                 SignalEventPayloadFactory payloadFactory,
                                 SignalAuditService signalAuditService,
                                 CircuitBreakerRegistry circuitBreakerRegistry,
-                                @Value("${data-distributor.processing.rate-limit:50}") int maxConcurrentRequests,
-                                @Value("${data-distributor.external-api.request-timeout-seconds:15}") long requestTimeoutSeconds,
-                                @Value("${data-distributor.external-api.retry.attempts:3}") int retryAttempts,
-                                @Value("${data-distributor.external-api.retry.backoff-seconds:5}") long retryBackoffSeconds,
-                                @Value("${data-distributor.external-api.retry.max-backoff-seconds:15}") long retryMaxBackoffSeconds) {
+                                DataDistributorProperties properties) {
     this.webClient = webClient;
     this.initialCehMappingUseCase = initialCehMappingUseCase;
     this.payloadFactory = payloadFactory;
     this.signalAuditService = signalAuditService;
+    this.properties = properties;
     this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("signalEventApi");
-    this.maxConcurrentRequests = Math.max(1, maxConcurrentRequests);
-    this.requestTimeoutSeconds = requestTimeoutSeconds;
-    this.retryAttempts = retryAttempts;
-    this.retryBackoffSeconds = retryBackoffSeconds;
-    this.retryMaxBackoffSeconds = retryMaxBackoffSeconds;
+    this.maxConcurrentRequests = Math.max(1, properties.getProcessing().getRateLimit());
   }
 
   @Override
@@ -95,19 +80,20 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   private Mono<Boolean> postEventReactive(SignalEvent event) {
     Objects.requireNonNull(event, "event must not be null");
     long seq = SEND_SEQUENCE.incrementAndGet();
+    String targetBaseUrl = properties.getExternalApi().getBaseUrl();
     if (seq % 1000 == 0) {
-      log.info("➡️  [{}] Sending uabsEventId={} to {}", seq, event.getUabsEventId(), externalApiBaseUrl);
+      log.info("➡️  [{}] Sending uabsEventId={} to {}", seq, event.getUabsEventId(), targetBaseUrl);
     } else {
-      log.debug("➡️  [{}] Sending uabsEventId={} to {}", seq, event.getUabsEventId(), externalApiBaseUrl);
+      log.debug("➡️  [{}] Sending uabsEventId={} to {}", seq, event.getUabsEventId(), targetBaseUrl);
     }
     return webClient.post()
-        .uri(externalApiBaseUrl + writeSignalPath)
+        .uri(properties.getExternalApi().getBaseUrl() + properties.getExternalApi().getWriteSignalPath())
         .bodyValue(payloadFactory.buildPayload(event))
         .exchangeToMono(clientResponse -> clientResponse
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .defaultIfEmpty(Collections.emptyMap())
             .map(body -> new ApiResponse(body, clientResponse.rawStatusCode())))
-        .timeout(Duration.ofSeconds(requestTimeoutSeconds))
+        .timeout(Duration.ofSeconds(properties.getExternalApi().getRequestTimeoutSeconds()))
         .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
         .retryWhen(buildRetrySpec(event.getUabsEventId()))
         .doOnSuccess(response -> handleSuccess(event, response))
@@ -117,9 +103,10 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   }
 
   private Retry buildRetrySpec(long uabsEventId) {
+    var retry = properties.getExternalApi().getRetry();
     return Retry
-        .backoff(retryAttempts, Duration.ofSeconds(retryBackoffSeconds))
-        .maxBackoff(Duration.ofSeconds(retryMaxBackoffSeconds))
+        .backoff(retry.getAttempts(), Duration.ofSeconds(retry.getBackoffSeconds()))
+        .maxBackoff(Duration.ofSeconds(retry.getMaxBackoffSeconds()))
         .filter(this::isRetryable)
         .doAfterRetry(retrySignal ->
             log.warn("🔁 Retry attempt #{} for uabsEventId={} cause={} breakerState={}",

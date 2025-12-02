@@ -1,5 +1,6 @@
 package com.datadistributor.outadapter.web;
 
+import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.outadapter.entity.SignalAuditJpaEntity;
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
@@ -7,7 +8,6 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.beans.factory.annotation.Value;
 
 @Component
 @RequiredArgsConstructor
@@ -15,14 +15,13 @@ import org.springframework.beans.factory.annotation.Value;
 public class SignalAuditService {
 
   private final SignalAuditRepository signalAuditRepository;
-  @Value("${data-distributor.audit.consumer-id:1}")
-  private long consumerId;
+  private final DataDistributorProperties properties;
 
   public void persistAudit(SignalEvent event, String status, String responseCode, String message) {
     SignalAuditJpaEntity audit = new SignalAuditJpaEntity();
     audit.setSignalId(event.getSignalId());
     audit.setUabsEventId(event.getUabsEventId());
-    audit.setConsumerId(consumerId);
+    audit.setConsumerId(properties.getAudit().getConsumerId());
     audit.setAgreementId(event.getAgreementId());
     audit.setUnauthorizedDebitBalance(
         event.getUnauthorizedDebitBalance() == null ? 0L : event.getUnauthorizedDebitBalance());

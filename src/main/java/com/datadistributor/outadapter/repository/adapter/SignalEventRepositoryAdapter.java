@@ -1,5 +1,6 @@
 package com.datadistributor.outadapter.repository.adapter;
 
+import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.outport.SignalEventRepository;
 import com.datadistributor.outadapter.entity.SignalEventJpaEntity;
@@ -9,7 +10,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -22,12 +22,11 @@ public class SignalEventRepositoryAdapter implements SignalEventRepository {
     private final SignalEventMapper signalEventMapper;
     public SignalEventRepositoryAdapter(SignalEventJpaRepository signalEventJpaRepository,
                                         SignalEventMapper signalEventMapper,
-                                        @Value("${data-distributor.processing.min-unauthorized-debit-balance:250}") long minUnauthorizedDebitBalance,
-                                        @Value("${data-distributor.processing.book-date-lookback-days:5}") int bookDateLookbackDays) {
+                                        DataDistributorProperties properties) {
         this.signalEventJpaRepository = signalEventJpaRepository;
         this.signalEventMapper = signalEventMapper;
-        this.minUnauthorizedDebitBalance = minUnauthorizedDebitBalance;
-        this.bookDateLookbackDays = bookDateLookbackDays;
+        this.minUnauthorizedDebitBalance = properties.getProcessing().getMinUnauthorizedDebitBalance();
+        this.bookDateLookbackDays = properties.getProcessing().getBookDateLookbackDays();
     }
 
     @Override
