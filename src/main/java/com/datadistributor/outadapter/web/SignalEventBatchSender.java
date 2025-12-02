@@ -39,6 +39,10 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   private final CircuitBreaker circuitBreaker;
   private final int maxConcurrentRequests;
   private static final AtomicLong SEND_SEQUENCE = new AtomicLong();
+  private final long requestTimeoutSeconds;
+  private final int retryAttempts;
+  private final long retryBackoffSeconds;
+  private final long retryMaxBackoffSeconds;
 
   @Value("${data-distributor.external-api.base-url}")
   private String externalApiBaseUrl;
@@ -50,13 +54,21 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
                                 SignalEventPayloadFactory payloadFactory,
                                 SignalAuditService signalAuditService,
                                 CircuitBreakerRegistry circuitBreakerRegistry,
-                                @Value("${data-distributor.processing.rate-limit:50}") int maxConcurrentRequests) {
+                                @Value("${data-distributor.processing.rate-limit:50}") int maxConcurrentRequests,
+                                @Value("${data-distributor.external-api.request-timeout-seconds:15}") long requestTimeoutSeconds,
+                                @Value("${data-distributor.external-api.retry.attempts:3}") int retryAttempts,
+                                @Value("${data-distributor.external-api.retry.backoff-seconds:5}") long retryBackoffSeconds,
+                                @Value("${data-distributor.external-api.retry.max-backoff-seconds:15}") long retryMaxBackoffSeconds) {
     this.webClient = webClient;
     this.initialCehMappingUseCase = initialCehMappingUseCase;
     this.payloadFactory = payloadFactory;
     this.signalAuditService = signalAuditService;
     this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("signalEventApi");
     this.maxConcurrentRequests = Math.max(1, maxConcurrentRequests);
+    this.requestTimeoutSeconds = requestTimeoutSeconds;
+    this.retryAttempts = retryAttempts;
+    this.retryBackoffSeconds = retryBackoffSeconds;
+    this.retryMaxBackoffSeconds = retryMaxBackoffSeconds;
   }
 
   @Override
@@ -95,7 +107,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .defaultIfEmpty(Collections.emptyMap())
             .map(body -> new ApiResponse(body, clientResponse.rawStatusCode())))
-        .timeout(Duration.ofSeconds(15))
+        .timeout(Duration.ofSeconds(requestTimeoutSeconds))
         .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
         .retryWhen(buildRetrySpec(event.getUabsEventId()))
         .doOnSuccess(response -> handleSuccess(event, response))
@@ -106,8 +118,8 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
 
   private Retry buildRetrySpec(long uabsEventId) {
     return Retry
-        .backoff(3, Duration.ofSeconds(5))
-        .maxBackoff(Duration.ofSeconds(15))
+        .backoff(retryAttempts, Duration.ofSeconds(retryBackoffSeconds))
+        .maxBackoff(Duration.ofSeconds(retryMaxBackoffSeconds))
         .filter(this::isRetryable)
         .doAfterRetry(retrySignal ->
             log.warn("🔁 Retry attempt #{} for uabsEventId={} cause={} breakerState={}",

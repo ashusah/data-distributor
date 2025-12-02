@@ -19,6 +19,19 @@ spring:
 data-distributor:
   external-api:
     base-url: http://localhost:8081
+    request-timeout-seconds: 5
+    retry:
+      attempts: 1
+      backoff-seconds: 1
+      max-backoff-seconds: 1
   processing:
     batch-size: 3
     rate-limit: 5
+  http:
+    connect-timeout-ms: 5000
+    response-timeout-seconds: 5
+    read-timeout-seconds: 5
+    write-timeout-seconds: 5
+azure:
+  keyvault:
+    enabled: false

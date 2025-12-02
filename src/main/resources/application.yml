@@ -19,6 +19,11 @@ data-distributor:
     write-signal-path: "/create-signal/write-signal"
     publisher: "UABS"
     publisher-id: "0bfe5670-457d-4872-a1f1-efe4db39f099"
+    request-timeout-seconds: 15
+    retry:
+      attempts: 3
+      backoff-seconds: 5
+      max-backoff-seconds: 15
   processing:
     batch-size: 300
     rate-limit: 20
@@ -26,6 +31,18 @@ data-distributor:
     book-date-lookback-days: 5
   audit:
     consumer-id: 1
+  http:
+    connect-timeout-ms: 10000
+    response-timeout-seconds: 10
+    read-timeout-seconds: 10
+    write-timeout-seconds: 10
+azure:
+  keyvault:
+    enabled: false
+    vault-url: ""
+    certificate-name: ""
+    certificate-password: ""
+    client-id: ""
 
 logging:
   level:
