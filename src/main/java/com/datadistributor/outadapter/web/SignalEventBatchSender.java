@@ -1,6 +1,7 @@
 package com.datadistributor.outadapter.web;
 
 import com.datadistributor.domain.SignalEvent;
+import com.datadistributor.domain.inport.InitialCehQueryUseCase;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.outadapter.entity.SignalAuditJpaEntity;
@@ -37,6 +38,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
 
   private final WebClient webClient;
   private final InitialCehMappingUseCase initialCehMappingUseCase;
+  private final InitialCehQueryUseCase initialCehQueryUseCase;
   private final SignalAuditRepository signalAuditRepository;
   private final CircuitBreaker circuitBreaker;
   private final int maxConcurrentRequests;
@@ -47,11 +49,13 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
 
   public SignalEventBatchSender(WebClient webClient,
                                 InitialCehMappingUseCase initialCehMappingUseCase,
+                                InitialCehQueryUseCase initialCehQueryUseCase,
                                 SignalAuditRepository signalAuditRepository,
                                 CircuitBreakerRegistry circuitBreakerRegistry,
                                 @Value("${data-distributor.processing.rate-limit:50}") int maxConcurrentRequests) {
     this.webClient = webClient;
     this.initialCehMappingUseCase = initialCehMappingUseCase;
+    this.initialCehQueryUseCase = initialCehQueryUseCase;
     this.signalAuditRepository = signalAuditRepository;
     this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("signalEventApi");
     this.maxConcurrentRequests = Math.max(1, maxConcurrentRequests);
@@ -88,7 +92,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     }
     return webClient.post()
         .uri(externalApiBaseUrl + "/create-signal/write-signal")
-        .bodyValue(event)
+        .bodyValue(toPayload(event))
         .exchangeToMono(clientResponse -> clientResponse
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .defaultIfEmpty(Collections.emptyMap())
@@ -245,6 +249,23 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
         event == null ? "unknown" : event.getUabsEventId(),
         ex.toString(),
         ex);
+  }
+
+  private SignalEventPayload toPayload(SignalEvent event) {
+    String initialEventId = null;
+    if (event != null && "OVERLIMIT_signal".equalsIgnoreCase(event.getEventStatus())) {
+      initialEventId = initialCehQueryUseCase.findInitialCehId(event.getSignalId()).orElse(null);
+    }
+    return new SignalEventPayload(
+        event.getAgreementId(),
+        event.getAgreementId(), // customerId uses agreementId for now
+        initialEventId,
+        "UABS",
+        "0bfe5670-457d-4872-a1f1-efe4db39f099",
+        event.getEventStatus(),
+        event.getEventRecordDateTime(),
+        event.getEventType()
+    );
   }
 
   private record ApiResponse(Map<String, Object> body, int statusCode) {

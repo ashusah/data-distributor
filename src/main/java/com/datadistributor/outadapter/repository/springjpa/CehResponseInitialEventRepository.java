@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CehResponseInitialEventRepository extends JpaRepository<CehResponseInitialEvent, CehResponseInitialEventId> {
+
+  java.util.Optional<CehResponseInitialEvent> findFirstByIdSignalId(Long signalId);
 }
