@@ -20,6 +20,7 @@ public class DataDistributorProperties {
     private String publisher = "UABS";
     private String publisherId = "0bfe5670-457d-4872-a1f1-efe4db39f099";
     private long requestTimeoutSeconds = 15;
+    private boolean syncEnabled = false;
     private Retry retry = new Retry();
 
     @Data

@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -33,6 +34,7 @@ import reactor.util.retry.Retry;
 public class SignalEventBatchSender implements SignalEventBatchPort {
 
   private final WebClient webClient;
+  private final SignalEventFeignClient feignClient;
   private final InitialCehMappingUseCase initialCehMappingUseCase;
   private final SignalEventPayloadFactory payloadFactory;
   private final SignalAuditService signalAuditService;
@@ -42,12 +44,14 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   private static final AtomicLong SEND_SEQUENCE = new AtomicLong();
 
   public SignalEventBatchSender(WebClient webClient,
+                                SignalEventFeignClient feignClient,
                                 InitialCehMappingUseCase initialCehMappingUseCase,
                                 SignalEventPayloadFactory payloadFactory,
                                 SignalAuditService signalAuditService,
                                 CircuitBreakerRegistry circuitBreakerRegistry,
                                 DataDistributorProperties properties) {
     this.webClient = webClient;
+    this.feignClient = feignClient;
     this.initialCehMappingUseCase = initialCehMappingUseCase;
     this.payloadFactory = payloadFactory;
     this.signalAuditService = signalAuditService;
@@ -86,6 +90,16 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     } else {
       log.debug("➡️  [{}] Sending uabsEventId={} to {}", seq, event.getUabsEventId(), targetBaseUrl);
     }
+
+    if (properties.getExternalApi().isSyncEnabled()) {
+      return Mono.fromCallable(() -> sendWithFeign(event))
+          .map(map -> map != null && map.get("ceh_event_id") != null)
+          .onErrorResume(ex -> {
+            handleException(event, ex);
+            return Mono.just(false);
+          });
+    }
+
     return webClient.post()
         .uri(properties.getExternalApi().getBaseUrl() + properties.getExternalApi().getWriteSignalPath())
         .bodyValue(payloadFactory.buildPayload(event))
@@ -100,6 +114,12 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
         .map(response -> response != null && response.body().get("ceh_event_id") != null)
         .doOnError(ex -> handleException(event, ex))
         .onErrorReturn(false);
+  }
+
+  private Map<String, Object> sendWithFeign(SignalEvent event) {
+    Map<String, Object> response = feignClient.postSignalEvent(payloadFactory.buildPayload(event));
+    handleSuccess(event, new ApiResponse(response, 200));
+    return response;
   }
 
   private Retry buildRetrySpec(long uabsEventId) {
