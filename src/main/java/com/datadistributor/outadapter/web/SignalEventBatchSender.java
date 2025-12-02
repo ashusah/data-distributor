@@ -1,19 +1,14 @@
 package com.datadistributor.outadapter.web;
 
 import com.datadistributor.domain.SignalEvent;
-import com.datadistributor.domain.inport.AccountBalanceQueryUseCase;
-import com.datadistributor.domain.inport.InitialCehQueryUseCase;
+import com.datadistributor.domain.inport.InitialCehMappingUseCase;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
-import com.datadistributor.outadapter.entity.SignalAuditJpaEntity;
-import com.datadistributor.domain.inport.InitialCehMappingUseCase;
-import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +34,8 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
 
   private final WebClient webClient;
   private final InitialCehMappingUseCase initialCehMappingUseCase;
-  private final InitialCehQueryUseCase initialCehQueryUseCase;
-  private final AccountBalanceQueryUseCase accountBalanceQueryUseCase;
-  private final SignalAuditRepository signalAuditRepository;
+  private final SignalEventPayloadFactory payloadFactory;
+  private final SignalAuditService signalAuditService;
   private final CircuitBreaker circuitBreaker;
   private final int maxConcurrentRequests;
   private static final AtomicLong SEND_SEQUENCE = new AtomicLong();
@@ -51,16 +45,14 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
 
   public SignalEventBatchSender(WebClient webClient,
                                 InitialCehMappingUseCase initialCehMappingUseCase,
-                                InitialCehQueryUseCase initialCehQueryUseCase,
-                                AccountBalanceQueryUseCase accountBalanceQueryUseCase,
-                                SignalAuditRepository signalAuditRepository,
+                                SignalEventPayloadFactory payloadFactory,
+                                SignalAuditService signalAuditService,
                                 CircuitBreakerRegistry circuitBreakerRegistry,
                                 @Value("${data-distributor.processing.rate-limit:50}") int maxConcurrentRequests) {
     this.webClient = webClient;
     this.initialCehMappingUseCase = initialCehMappingUseCase;
-    this.initialCehQueryUseCase = initialCehQueryUseCase;
-    this.accountBalanceQueryUseCase = accountBalanceQueryUseCase;
-    this.signalAuditRepository = signalAuditRepository;
+    this.payloadFactory = payloadFactory;
+    this.signalAuditService = signalAuditService;
     this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("signalEventApi");
     this.maxConcurrentRequests = Math.max(1, maxConcurrentRequests);
   }
@@ -96,7 +88,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     }
     return webClient.post()
         .uri(externalApiBaseUrl + "/create-signal/write-signal")
-        .bodyValue(toPayload(event))
+        .bodyValue(payloadFactory.buildPayload(event))
         .exchangeToMono(clientResponse -> clientResponse
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .defaultIfEmpty(Collections.emptyMap())
@@ -143,18 +135,18 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     if (ceh != null) {
       long cehId = parseLongSafely(ceh);
       try {
-        persistAudit(event, "PASS", String.valueOf(response.statusCode()), "ceh_event_id=" + cehId);
+        signalAuditService.persistAudit(event, "PASS", String.valueOf(response.statusCode()), "ceh_event_id=" + cehId);
       } catch (Exception ex) {
-        logAuditFailure(event, ex);
+        signalAuditService.logAuditFailure(event, ex);
       }
       initialCehMappingUseCase.handleInitialCehMapping(event, cehId);
       log.info("✅ Posted uabsEventId={} | ceh_event_id={} | thread={}",
           event.getUabsEventId(), cehId, Thread.currentThread().getName());
     } else {
       try {
-        persistAudit(event, "FAIL", String.valueOf(response.statusCode()), "NO_CEH_EVENT_ID");
+        signalAuditService.persistAudit(event, "FAIL", String.valueOf(response.statusCode()), "NO_CEH_EVENT_ID");
       } catch (Exception ex) {
-        logAuditFailure(event, ex);
+        signalAuditService.logAuditFailure(event, ex);
       }
       log.warn("⚠️ No ceh_event_id returned for uabsEventId={} | thread={}",
           event.getUabsEventId(), Thread.currentThread().getName());
@@ -203,9 +195,9 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     log.warn("💾 Persisting FAIL for uabsEventId={} | status={} | reason={} | error={}",
         event.getUabsEventId(), status, reason, ex.toString());
     try {
-      persistAudit(event, status, responseCode, ex.getClass().getSimpleName() + ": " + ex.getMessage());
+      signalAuditService.persistAudit(event, status, responseCode, ex.getClass().getSimpleName() + ": " + ex.getMessage());
     } catch (Exception auditEx) {
-      logAuditFailure(event, auditEx);
+      signalAuditService.logAuditFailure(event, auditEx);
     }
 
     log.error("❌ Final failure for uabsEventId={} | status={} | error={} | thread={}",
@@ -225,51 +217,6 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
       return defaultReason;
     }
     return cls.length() > 32 ? cls.substring(0, 32) : cls;
-  }
-
-  private void persistAudit(SignalEvent event, String status, String responseCode, String message) {
-    SignalAuditJpaEntity audit = new SignalAuditJpaEntity();
-    audit.setSignalId(event.getSignalId());
-    audit.setUabsEventId(event.getUabsEventId());
-    audit.setConsumerId(1L);
-    audit.setAgreementId(event.getAgreementId());
-    audit.setUnauthorizedDebitBalance(
-        event.getUnauthorizedDebitBalance() == null ? 0L : event.getUnauthorizedDebitBalance());
-    audit.setStatus(status);
-    audit.setResponseCode(truncate(responseCode, 10));
-    audit.setResponseMessage(truncate(message, 100));
-    audit.setAuditRecordDateTime(LocalDateTime.now());
-    signalAuditRepository.save(audit);
-  }
-
-  private String truncate(String value, int max) {
-    if (value == null) return "";
-    if (value.length() <= max) return value;
-    return value.substring(0, max);
-  }
-
-  private void logAuditFailure(SignalEvent event, Exception ex) {
-    log.error("LOG001- Audit Record uabsEventId={} failed to be persisted: {}",
-        event == null ? "unknown" : event.getUabsEventId(),
-        ex.toString(),
-        ex);
-  }
-
-  private SignalEventPayload toPayload(SignalEvent event) {
-    String initialEventId = initialCehQueryUseCase.findInitialCehId(event.getSignalId()).orElse(null);
-    Long customerId = accountBalanceQueryUseCase
-        .findBcNumberByAgreementId(event.getAgreementId())
-        .orElse(null);
-    return new SignalEventPayload(
-        event.getAgreementId(),
-        customerId,
-        initialEventId,
-        "UABS",
-        "0bfe5670-457d-4872-a1f1-efe4db39f099",
-        event.getEventStatus(),
-        event.getEventRecordDateTime(),
-        event.getEventType()
-    );
   }
 
   private record ApiResponse(Map<String, Object> body, int statusCode) {
