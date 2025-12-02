@@ -1,19 +1,28 @@
 package com.datadistributor.outadapter.entity;
 
-import jakarta.persistence.*;
-import lombok.Data;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "signals")
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SignalEventJpaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "uabs_event_id")
+    @EqualsAndHashCode.Include
     private Long uabsEventId;
 
     @Column(name = "signalId")
@@ -43,4 +52,3 @@ public class SignalEventJpaEntity {
     @Column(name = "product_id")
     private Short productId;
 }
-
