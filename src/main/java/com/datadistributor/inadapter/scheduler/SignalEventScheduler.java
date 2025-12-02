@@ -5,8 +5,8 @@ import com.datadistributor.domain.job.JobResult;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -14,17 +14,33 @@ import org.springframework.stereotype.Component;
  * Inbound adapter: time-based driver that triggers the SignalEvent processing use case.
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class SignalEventScheduler {
 
   private final SignalEventProcessingUseCase processingUseCase;
+  private final boolean enable2am;
+  private final boolean enableMon10;
+  private final boolean enableMon12;
+
+  public SignalEventScheduler(SignalEventProcessingUseCase processingUseCase,
+                              @Value("${data-distributor.scheduler.enable-2am:true}") boolean enable2am,
+                              @Value("${data-distributor.scheduler.enable-mon10:true}") boolean enableMon10,
+                              @Value("${data-distributor.scheduler.enable-mon12:true}") boolean enableMon12) {
+    this.processingUseCase = processingUseCase;
+    this.enable2am = enable2am;
+    this.enableMon10 = enableMon10;
+    this.enableMon12 = enableMon12;
+  }
 
   /**
    * Daily 02:00 run for Tue–Sat using today's date. Skip Sunday and Monday.
    */
   @Scheduled(cron = "0 0 2 * * *")
   public void runDaily2am() {
+    if (!enable2am) {
+      log.warn("LOG_004: 2am schedule disabled via config");
+      return;
+    }
     LocalDate today = LocalDate.now();
     DayOfWeek dow = today.getDayOfWeek();
     if (dow == DayOfWeek.SUNDAY || dow == DayOfWeek.MONDAY) {
@@ -39,6 +55,10 @@ public class SignalEventScheduler {
    */
   @Scheduled(cron = "0 0 10 * * MON")
   public void runMonday10am() {
+    if (!enableMon10) {
+      log.warn("LOG_004: Monday 10am schedule disabled via config");
+      return;
+    }
     LocalDate targetDate = LocalDate.now().minusDays(1); // Sunday
     trigger("sched-mon-10", targetDate);
   }
@@ -48,6 +68,10 @@ public class SignalEventScheduler {
    */
   @Scheduled(cron = "0 0 12 * * MON")
   public void runMondayNoon() {
+    if (!enableMon12) {
+      log.warn("LOG_004: Monday 12pm schedule disabled via config");
+      return;
+    }
     LocalDate targetDate = LocalDate.now(); // Monday
     trigger("sched-mon-12", targetDate);
   }
