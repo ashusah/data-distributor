@@ -16,6 +16,7 @@ spring:
 data-distributor:
   external-api:
     base-url: "http://localhost:8081"
+    write-signal-path: "/create-signal/write-signal"
   processing:
     batch-size: 300
     rate-limit: 20

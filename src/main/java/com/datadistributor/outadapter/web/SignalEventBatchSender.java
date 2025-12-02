@@ -42,6 +42,8 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
 
   @Value("${data-distributor.external-api.base-url}")
   private String externalApiBaseUrl;
+  @Value("${data-distributor.external-api.write-signal-path:/create-signal/write-signal}")
+  private String writeSignalPath;
 
   public SignalEventBatchSender(WebClient webClient,
                                 InitialCehMappingUseCase initialCehMappingUseCase,
@@ -87,7 +89,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
       log.debug("➡️  [{}] Sending uabsEventId={} to {}", seq, event.getUabsEventId(), externalApiBaseUrl);
     }
     return webClient.post()
-        .uri(externalApiBaseUrl + "/create-signal/write-signal")
+        .uri(externalApiBaseUrl + writeSignalPath)
         .bodyValue(payloadFactory.buildPayload(event))
         .exchangeToMono(clientResponse -> clientResponse
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
