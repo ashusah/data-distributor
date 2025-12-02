@@ -3,7 +3,10 @@ package com.datadistributor.outadapter.web;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
+import com.datadistributor.outadapter.entity.CehResponseInitialEvent;
+import com.datadistributor.outadapter.entity.CehResponseInitialEventId;
 import com.datadistributor.outadapter.entity.SignalAuditJpaEntity;
+import com.datadistributor.outadapter.repository.springjpa.CehResponseInitialEventRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -35,6 +38,7 @@ import reactor.util.retry.Retry;
 public class SignalEventBatchSender implements SignalEventBatchPort {
 
   private final WebClient webClient;
+  private final CehResponseInitialEventRepository cehResponseInitialEventRepository;
   private final SignalAuditRepository signalAuditRepository;
   private final CircuitBreaker circuitBreaker;
   private final int maxConcurrentRequests;
@@ -44,10 +48,12 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   private String externalApiBaseUrl;
 
   public SignalEventBatchSender(WebClient webClient,
+                                CehResponseInitialEventRepository cehResponseInitialEventRepository,
                                 SignalAuditRepository signalAuditRepository,
                                 CircuitBreakerRegistry circuitBreakerRegistry,
                                 @Value("${data-distributor.processing.rate-limit:50}") int maxConcurrentRequests) {
     this.webClient = webClient;
+    this.cehResponseInitialEventRepository = cehResponseInitialEventRepository;
     this.signalAuditRepository = signalAuditRepository;
     this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("signalEventApi");
     this.maxConcurrentRequests = Math.max(1, maxConcurrentRequests);
@@ -135,6 +141,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
       } catch (Exception ex) {
         logAuditFailure(event, ex);
       }
+      persistInitialCeh(event, cehId);
       log.info("✅ Posted uabsEventId={} | ceh_event_id={} | thread={}",
           event.getUabsEventId(), cehId, Thread.currentThread().getName());
     } else {
@@ -233,6 +240,23 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     if (value == null) return "";
     if (value.length() <= max) return value;
     return value.substring(0, max);
+  }
+
+  private void persistInitialCeh(SignalEvent event, long cehId) {
+    if (event == null || event.getEventStatus() == null) return;
+    if (!"NEW_OVERLIMIT".equalsIgnoreCase(event.getEventStatus())) return;
+    try {
+      CehResponseInitialEventId id = new CehResponseInitialEventId(
+          String.valueOf(cehId),
+          event.getSignalId());
+      CehResponseInitialEvent initial = new CehResponseInitialEvent(id);
+      cehResponseInitialEventRepository.save(initial);
+    } catch (Exception ex) {
+      log.error("LOG002- Initial CEH mapping for uabsEventId={} failed to be persisted: {}",
+          event.getUabsEventId(),
+          ex.toString(),
+          ex);
+    }
   }
 
   private void logAuditFailure(SignalEvent event, Exception ex) {
