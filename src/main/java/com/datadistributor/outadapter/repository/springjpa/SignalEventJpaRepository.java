@@ -42,4 +42,15 @@ public interface SignalEventJpaRepository extends JpaRepository<SignalEventJpaEn
                              @Param("end") LocalDateTime end,
                              @Param("minUnauthorizedBalance") long minUnauthorizedBalance,
                              @Param("bookDateTarget") LocalDate bookDateTarget);
+
+    @Query("""
+        select e
+        from SignalEventJpaEntity e
+        where e.signalId = :signalId
+          and e.eventRecordDateTime < :before
+        order by e.eventRecordDateTime desc, e.uabsEventId desc
+        """)
+    List<SignalEventJpaEntity> findPreviousEvent(@Param("signalId") Long signalId,
+                                                 @Param("before") LocalDateTime before,
+                                                 Pageable pageable);
 }

@@ -7,8 +7,11 @@ import com.datadistributor.domain.job.JobProgressTracker;
 import com.datadistributor.domain.job.JobResult;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalAuditQueryPort;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -21,15 +24,18 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
 
   private final SignalEventRepository signalEventRepository;
   private final SignalEventBatchPort signalEventBatchPort;
+  private final SignalAuditQueryPort signalAuditQueryPort;
   private final int batchSize;
   private final JobProgressTracker jobProgressTracker;
 
   public SignalEventProcessingService(SignalEventRepository signalEventRepository,
                                       SignalEventBatchPort signalEventBatchPort,
+                                      SignalAuditQueryPort signalAuditQueryPort,
                                       int batchSize,
                                       JobProgressTracker jobProgressTracker) {
     this.signalEventRepository = signalEventRepository;
     this.signalEventBatchPort = signalEventBatchPort;
+    this.signalAuditQueryPort = signalAuditQueryPort;
     this.batchSize = Math.max(1, batchSize);
     this.jobProgressTracker = jobProgressTracker;
   }
@@ -38,6 +44,10 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
   public JobResult processEventsForDate(String jobId, LocalDate date) {
     if (date == null) {
       return new JobResult(0, 0, "Date is required");
+    }
+    Optional<String> validationError = validatePriorEvents(date);
+    if (validationError.isPresent()) {
+      return new JobResult(0, 0, validationError.get());
     }
     long totalCount = signalEventRepository.countSignalEventsForCEH(date);
     if (totalCount == 0) {
@@ -116,5 +126,42 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
   }
 
   private record TrackedBatch(CompletableFuture<BatchResult> future, int number, int size) {
+  }
+
+  private Optional<String> validatePriorEvents(LocalDate date) {
+    List<SignalEvent> eventsForDate = signalEventRepository.getAllSignalEventsOfThisDate(date);
+    if (eventsForDate.isEmpty()) {
+      return Optional.empty();
+    }
+
+    List<SignalEvent> missingPrereq = new ArrayList<>();
+
+    eventsForDate.stream()
+        .sorted(Comparator.comparing(SignalEvent::getSignalId)
+            .thenComparing(SignalEvent::getEventRecordDateTime, Comparator.nullsLast(LocalDateTime::compareTo))
+            .thenComparing(SignalEvent::getUabsEventId, Comparator.nullsLast(Long::compareTo)))
+        .forEach(event -> {
+          Optional<SignalEvent> prev = signalEventRepository.getPreviousEvent(
+              event.getSignalId(), event.getEventRecordDateTime());
+          if (prev.isPresent()) {
+            boolean ok = signalAuditQueryPort.isEventSuccessful(prev.get().getUabsEventId(), 1L);
+            if (!ok) {
+              missingPrereq.add(event);
+            }
+          }
+        });
+
+    if (missingPrereq.isEmpty()) {
+      return Optional.empty();
+    }
+
+    String ids = missingPrereq.stream()
+        .map(SignalEvent::getUabsEventId)
+        .map(String::valueOf)
+        .collect(Collectors.joining(","));
+    String message = "Prerequisite check failed for date " + date
+        + ". Prior event not successful for uabsEventIds=[" + ids + "]";
+    log.warn(message);
+    return Optional.of(message);
   }
 }

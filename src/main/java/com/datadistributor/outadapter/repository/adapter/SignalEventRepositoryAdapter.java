@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -48,5 +49,18 @@ public class SignalEventRepositoryAdapter implements SignalEventRepository {
         LocalDate bookDateTarget = date.minusDays(BOOK_DATE_LOOKBACK_DAYS);
         return signalEventJpaRepository.countEligibleForCEH(
             start, end, MIN_UNAUTHORIZED_DEBIT_BALANCE, bookDateTarget);
+    }
+
+    @Override
+    public Optional<SignalEvent> getPreviousEvent(Long signalId, LocalDateTime before) {
+        if (signalId == null || before == null) {
+            return Optional.empty();
+        }
+        List<SignalEventJpaEntity> results = signalEventJpaRepository.findPreviousEvent(
+            signalId, before, PageRequest.of(0, 1));
+        if (results.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(signalEventMapper.toDomain(results.get(0)));
     }
 }

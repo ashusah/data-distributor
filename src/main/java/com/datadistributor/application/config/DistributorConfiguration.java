@@ -6,6 +6,7 @@ import com.datadistributor.domain.inport.InitialCehQueryUseCase;
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
 import com.datadistributor.domain.inport.SignalEventUseCase;
 import com.datadistributor.domain.job.JobProgressTracker;
+import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import com.datadistributor.domain.outport.InitialCehMappingPort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
@@ -37,10 +38,11 @@ public class DistributorConfiguration {
     SignalEventProcessingUseCase signalEventProcessingUseCase(
         SignalEventRepository repository,
         SignalEventBatchPort batchPort,
+        SignalAuditQueryPort signalAuditQueryPort,
         JobProgressTracker jobProgressTracker,
         @Value("${data-distributor.processing.batch-size:100}") int batchSize
     ) {
-        return new SignalEventProcessingService(repository, batchPort, batchSize, jobProgressTracker);
+        return new SignalEventProcessingService(repository, batchPort, signalAuditQueryPort, batchSize, jobProgressTracker);
     }
 
     @Bean
