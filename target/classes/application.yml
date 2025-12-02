@@ -16,9 +16,16 @@ spring:
 data-distributor:
   external-api:
     base-url: "http://localhost:8081"
+    write-signal-path: "/create-signal/write-signal"
+    publisher: "UABS"
+    publisher-id: "0bfe5670-457d-4872-a1f1-efe4db39f099"
   processing:
     batch-size: 300
     rate-limit: 20
+    min-unauthorized-debit-balance: 250
+    book-date-lookback-days: 5
+  audit:
+    consumer-id: 1
 
 logging:
   level:

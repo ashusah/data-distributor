@@ -1,6 +1,7 @@
 package com.datadistributor.support;
 
 import java.util.concurrent.ThreadLocalRandom;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -18,8 +19,15 @@ public class StubExternalApiConfig {
 
   @Bean
   @Primary
-  WebClient webClient() {
+  WebClient webClient(@Value("${stub.api.response-mode:success}") String mode) {
     ExchangeFunction fx = request -> {
+      if ("fail".equalsIgnoreCase(mode)) {
+        ClientResponse response = ClientResponse.create(HttpStatus.INTERNAL_SERVER_ERROR)
+            .header("Content-Type", "application/json")
+            .body("{\"error\": \"simulated\"}")
+            .build();
+        return Mono.just(response);
+      }
       long cehId = 100_000_000L + ThreadLocalRandom.current().nextLong(900_000_000L);
       ClientResponse response = ClientResponse.create(HttpStatus.OK)
           .header("Content-Type", "application/json")
