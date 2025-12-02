@@ -1,24 +1,23 @@
 package com.datadistributor.outadapter.web;
 
+import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.InitialCehMappingUseCase;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
-import com.datadistributor.application.config.DataDistributorProperties;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -94,7 +93,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
 
     if (properties.getExternalApi().isSyncEnabled()) {
       return Mono.fromCallable(() -> sendWithFeign(event))
-          .map(map -> map != null && map.get("ceh_event_id") != null)
+          .map(this::hasCehEventId)
           .onErrorResume(ex -> {
             handleException(event, ex);
             return Mono.just(false);
@@ -112,7 +111,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
         .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
         .retryWhen(buildRetrySpec(event.getUabsEventId()))
         .doOnSuccess(response -> handleSuccess(event, response))
-        .map(response -> response != null && response.body().get("ceh_event_id") != null)
+        .map(response -> hasCehEventId(response == null ? null : response.body()))
         .doOnError(ex -> handleException(event, ex))
         .onErrorReturn(false);
   }
@@ -241,6 +240,10 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
       return defaultReason;
     }
     return cls.length() > 32 ? cls.substring(0, 32) : cls;
+  }
+
+  private boolean hasCehEventId(Map<String, Object> body) {
+    return body != null && body.get("ceh_event_id") != null;
   }
 
   private Map<String, Object> toResponseBody(SignalEventResponse response) {
