@@ -37,7 +37,7 @@ public class AzureBlobStorageClient implements FileStoragePort {
           .upload(BinaryData.fromString(content), true);
       log.info("Uploaded blob {} to container {}", blobPath, storage.getContainer());
     } catch (Exception ex) {
-      log.error("Failed to upload blob {}: {}", fileName, ex.getMessage(), ex);
+      log.error("{}: Failed to upload blob {}: {}", com.datadistributor.application.ErrorCodes.FILE_UPLOAD_FAILED, fileName, ex.getMessage(), ex);
     }
   }
 

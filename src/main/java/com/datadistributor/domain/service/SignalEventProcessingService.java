@@ -10,6 +10,7 @@ import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.report.DeliveryReport;
+import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
   private final SignalEventRepository signalEventRepository;
   private final SignalEventBatchPort signalEventBatchPort;
   private final SignalAuditQueryPort signalAuditQueryPort;
+  private final SignalDispatchSelectorUseCase signalDispatchSelector;
   private final int batchSize;
   private final JobProgressTracker jobProgressTracker;
   private final DeliveryReportPublisher deliveryReportPublisher;
@@ -34,12 +36,14 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
   public SignalEventProcessingService(SignalEventRepository signalEventRepository,
                                       SignalEventBatchPort signalEventBatchPort,
                                       SignalAuditQueryPort signalAuditQueryPort,
+                                      SignalDispatchSelectorUseCase signalDispatchSelector,
                                       int batchSize,
                                       JobProgressTracker jobProgressTracker,
                                       DeliveryReportPublisher deliveryReportPublisher) {
     this.signalEventRepository = signalEventRepository;
     this.signalEventBatchPort = signalEventBatchPort;
     this.signalAuditQueryPort = signalAuditQueryPort;
+    this.signalDispatchSelector = signalDispatchSelector;
     this.batchSize = Math.max(1, batchSize);
     this.jobProgressTracker = jobProgressTracker;
     this.deliveryReportPublisher = deliveryReportPublisher;
@@ -55,9 +59,16 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
       log.error("LOG_003: Batch aborted as previous events are pending for date {} | reason={}", date, validationError.get());
       return new JobResult(0, 0, 0, validationError.get());
     }
-    long totalCount = signalEventRepository.countSignalEventsForCEH(date);
+    List<SignalEvent> toSend = signalDispatchSelector.selectEventsToSend(date);
+    long totalCount = toSend.size();
+    boolean usedSelector = true;
     if (totalCount == 0) {
-      return new JobResult(0, 0, 0, "No signal events found for date " + date);
+      // fallback to legacy CEH page flow if selector produces no items
+      totalCount = signalEventRepository.countSignalEventsForCEH(date);
+      if (totalCount == 0) {
+        return new JobResult(0, 0, 0, "No signal events found for date " + date);
+      }
+      usedSelector = false;
     }
 
     int totalBatches = (int) Math.ceil((double) totalCount / batchSize);
@@ -68,14 +79,19 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
     JobProgressTracker.JobProgress progress =
         jobProgressTracker.start(Optional.ofNullable(jobId).orElse(null), totalBatches);
 
-    int page = 0;
-    while (true) {
-      List<SignalEvent> chunk = signalEventRepository.getSignalEventsForCEH(date, page, batchSize);
-      if (chunk.isEmpty()) {
-        break;
+    if (usedSelector) {
+      List<List<SignalEvent>> chunks = chunk(toSend, batchSize);
+      for (List<SignalEvent> chunk : chunks) {
+        trackedBatches.add(submitBatch(new ArrayList<>(chunk), batchCounter.incrementAndGet()));
       }
-      trackedBatches.add(submitBatch(new ArrayList<>(chunk), batchCounter.incrementAndGet()));
-      page++;
+    } else {
+      int page = 0;
+      while (true) {
+        List<SignalEvent> chunk = signalEventRepository.getSignalEventsForCEH(date, page, batchSize);
+        if (chunk.isEmpty()) break;
+        trackedBatches.add(submitBatch(new ArrayList<>(chunk), batchCounter.incrementAndGet()));
+        page++;
+      }
     }
 
     attachProgressLogging(progress, trackedBatches);
@@ -133,6 +149,14 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
   }
 
   private record TrackedBatch(CompletableFuture<BatchResult> future, int number, int size) {
+  }
+
+  private List<List<SignalEvent>> chunk(List<SignalEvent> events, int size) {
+    List<List<SignalEvent>> chunks = new ArrayList<>();
+    for (int i = 0; i < events.size(); i += size) {
+      chunks.add(events.subList(i, Math.min(events.size(), i + size)));
+    }
+    return chunks;
   }
 
   private Optional<String> validatePriorEvents(LocalDate date) {

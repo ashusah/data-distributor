@@ -11,4 +11,5 @@ public interface SignalEventRepository {
     List<SignalEvent> getSignalEventsForCEH(LocalDate date, int page, int size);
     long countSignalEventsForCEH(LocalDate date);
     Optional<SignalEvent> getPreviousEvent(Long signalId, java.time.LocalDateTime before);
+    Optional<SignalEvent> getEarliestOverlimitEvent(Long signalId);
 }

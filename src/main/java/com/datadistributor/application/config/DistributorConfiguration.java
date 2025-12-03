@@ -13,12 +13,17 @@ import com.datadistributor.domain.outport.InitialCehMappingPort;
 import com.datadistributor.domain.outport.FileStoragePort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalPort;
 import com.datadistributor.domain.service.AccountBalanceQueryService;
 import com.datadistributor.domain.service.InitialCehMappingService;
 import com.datadistributor.domain.service.InitialCehQueryService;
 import com.datadistributor.domain.service.DialSignalDataExportService;
+import com.datadistributor.domain.service.SignalQueryService;
 import com.datadistributor.domain.service.SignalEventDomainService;
 import com.datadistributor.domain.service.SignalEventProcessingService;
+import com.datadistributor.domain.inport.SignalQueryUseCase;
+import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
+import com.datadistributor.domain.service.SignalDispatchSelector;
 import com.datadistributor.outadapter.report.AzureBlobReportPublisher;
 import com.datadistributor.outadapter.report.AzureBlobStorageClient;
 import java.time.Clock;
@@ -46,6 +51,7 @@ public class DistributorConfiguration {
         SignalEventRepository repository,
         SignalEventBatchPort batchPort,
         SignalAuditQueryPort signalAuditQueryPort,
+        SignalDispatchSelectorUseCase signalDispatchSelectorUseCase,
         JobProgressTracker jobProgressTracker,
         DataDistributorProperties properties,
         DeliveryReportPublisher deliveryReportPublisher
@@ -54,6 +60,7 @@ public class DistributorConfiguration {
             repository,
             batchPort,
             signalAuditQueryPort,
+            signalDispatchSelectorUseCase,
             properties.getProcessing().getBatchSize(),
             jobProgressTracker,
             deliveryReportPublisher);
@@ -86,13 +93,37 @@ public class DistributorConfiguration {
 
     @Bean
     DialSignalDataExportService dialSignalDataExportService(SignalEventUseCase signalEventUseCase,
+                                                           SignalQueryUseCase signalQueryUseCase,
+                                                           AccountBalanceOverviewPort accountBalanceOverviewPort,
                                                            FileStoragePort storageClient,
                                                            DataDistributorProperties properties) {
-        return new DialSignalDataExportService(signalEventUseCase, storageClient, properties);
+        return new DialSignalDataExportService(signalEventUseCase, signalQueryUseCase, accountBalanceOverviewPort, storageClient, properties);
     }
 
     @Bean
     Clock systemClock() {
         return Clock.systemDefaultZone();
+    }
+
+    @Bean
+    SignalQueryUseCase signalQueryUseCase(SignalPort signalPort) {
+        return new SignalQueryService(signalPort);
+    }
+
+    @Bean
+    SignalDispatchSelectorUseCase signalDispatchSelectorUseCase(SignalEventRepository signalEventRepository,
+                                                                SignalPort signalPort,
+                                                                SignalAuditQueryPort signalAuditQueryPort,
+                                                                InitialCehMappingPort initialCehMappingPort,
+                                                                DataDistributorProperties properties) {
+        return new SignalDispatchSelector(
+            signalEventRepository,
+            signalPort,
+            signalAuditQueryPort,
+            initialCehMappingPort,
+            properties.getProcessing().getMinUnauthorizedDebitBalance(),
+            properties.getProcessing().getBookDateLookbackDays(),
+            properties.getAudit().getConsumerId()
+        );
     }
 }

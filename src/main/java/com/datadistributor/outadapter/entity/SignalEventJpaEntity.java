@@ -13,7 +13,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "signals")
+@Table(name = "signal_events")
 @Getter
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -25,7 +25,7 @@ public class SignalEventJpaEntity {
     @EqualsAndHashCode.Include
     private Long uabsEventId;
 
-    @Column(name = "signalId")
+    @Column(name = "signal_id")
     private Long signalId;
 
     @Column(name = "agreement_id")

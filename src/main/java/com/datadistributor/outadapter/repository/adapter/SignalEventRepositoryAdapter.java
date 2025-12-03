@@ -68,4 +68,14 @@ public class SignalEventRepositoryAdapter implements SignalEventRepository {
         }
         return Optional.ofNullable(signalEventMapper.toDomain(results.get(0)));
     }
+
+    @Override
+    public Optional<SignalEvent> getEarliestOverlimitEvent(Long signalId) {
+        if (signalId == null) {
+            return Optional.empty();
+        }
+        return signalEventJpaRepository.findFirstBySignalIdAndEventStatusOrderByEventRecordDateTimeAsc(
+                signalId, "OVERLIMIT_SIGNAL")
+            .map(signalEventMapper::toDomain);
+    }
 }

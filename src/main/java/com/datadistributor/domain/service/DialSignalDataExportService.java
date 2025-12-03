@@ -2,7 +2,11 @@ package com.datadistributor.domain.service;
 
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
+import com.datadistributor.domain.AccountBalanceOverview;
+import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.inport.SignalEventUseCase;
+import com.datadistributor.domain.inport.SignalQueryUseCase;
+import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import com.datadistributor.domain.outport.FileStoragePort;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -15,13 +19,19 @@ public class DialSignalDataExportService {
 
   private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private final SignalEventUseCase signalEventUseCase;
+  private final SignalQueryUseCase signalQueryUseCase;
+  private final AccountBalanceOverviewPort accountBalanceOverviewPort;
   private final FileStoragePort storageClient;
   private final DataDistributorProperties.Storage storage;
 
   public DialSignalDataExportService(SignalEventUseCase signalEventUseCase,
+                                     SignalQueryUseCase signalQueryUseCase,
+                                     AccountBalanceOverviewPort accountBalanceOverviewPort,
                                      FileStoragePort storageClient,
                                      DataDistributorProperties properties) {
     this.signalEventUseCase = signalEventUseCase;
+    this.signalQueryUseCase = signalQueryUseCase;
+    this.accountBalanceOverviewPort = accountBalanceOverviewPort;
     this.storageClient = storageClient;
     this.storage = properties.getStorage();
   }
@@ -42,7 +52,7 @@ public class DialSignalDataExportService {
   }
 
   private String toCsv(List<SignalEvent> events) {
-    String header = "uabs_event_id,signal_id,agreement_id,event_record_date_time,event_type,event_status,unauthorized_debit_balance,book_date,grv,product_id";
+    String header = "AccountNumber,IBAN,CustomerId,GRV,ProductId,CurrencyCode,SignalStartDate,SignalEndDate,SignalType,DebitAmount,BookDate";
     String rows = events.stream()
         .map(this::toCsvRow)
         .collect(Collectors.joining("\n"));
@@ -50,17 +60,32 @@ public class DialSignalDataExportService {
   }
 
   private String toCsvRow(SignalEvent event) {
+    Signal signal = signalQueryUseCase.findBySignalId(event.getSignalId())
+        .orElseGet(() -> signalFallback(event));
+    AccountBalanceOverview account = accountBalanceOverviewPort.findByAgreementId(event.getAgreementId())
+        .orElse(null);
+
     return String.join(",",
-        safe(event.getUabsEventId()),
-        safe(event.getSignalId()),
-        safe(event.getAgreementId()),
-        safe(event.getEventRecordDateTime()),
-        safe(event.getEventType()),
-        safe(event.getEventStatus()),
-        safe(event.getUnauthorizedDebitBalance()),
-        safe(event.getBookDate()),
+        safe(signal.getAgreementId()), // AccountNumber from signal
+        safe(account == null ? null : account.getIban()),
+        safe(account == null ? null : account.getBcNumber()), // treating bcNumber as CustomerId
         safe(event.getGrv()),
-        safe(event.getProductId()));
+        safe(event.getProductId()),
+        safe(account == null ? null : account.getCurrencyCode()),
+        safe(signal.getSignalStartDate()),
+        safe(signal.getSignalEndDate()),
+        "OVERLIMIT_SIGNAL",
+        safe(event.getUnauthorizedDebitBalance()),
+        safe(event.getBookDate()));
+  }
+
+  private Signal signalFallback(SignalEvent event) {
+    Signal s = new Signal();
+    s.setSignalId(event.getSignalId());
+    s.setAgreementId(event.getAgreementId());
+    s.setSignalStartDate(event.getEventRecordDateTime() == null ? null : event.getEventRecordDateTime().toLocalDate());
+    s.setSignalEndDate(null);
+    return s;
   }
 
   private String safe(Object value) {

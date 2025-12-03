@@ -5,58 +5,42 @@ import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.InitialCehMappingUseCase;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
-import io.github.resilience4j.circuitbreaker.CircuitBreaker;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.PrematureCloseException;
-import reactor.util.retry.Retry;
 
 @Component
 @Slf4j
 public class SignalEventBatchSender implements SignalEventBatchPort {
 
-  private final WebClient webClient;
-  private final SignalEventFeignClient feignClient;
+  private final SignalEventClient blockingClient;
+  private final SignalEventClient reactiveClient;
   private final InitialCehMappingUseCase initialCehMappingUseCase;
-  private final SignalEventPayloadFactory payloadFactory;
   private final SignalAuditService signalAuditService;
   private final DataDistributorProperties properties;
-  private final CircuitBreaker circuitBreaker;
+  private final ErrorClassifier errorClassifier;
   private final int maxConcurrentRequests;
   private static final AtomicLong SEND_SEQUENCE = new AtomicLong();
 
-  public SignalEventBatchSender(WebClient webClient,
-                                SignalEventFeignClient feignClient,
+  public SignalEventBatchSender(@org.springframework.beans.factory.annotation.Qualifier("blockingSignalEventClient") SignalEventClient blockingClient,
+                                @org.springframework.beans.factory.annotation.Qualifier("reactiveSignalEventClient") SignalEventClient reactiveClient,
                                 InitialCehMappingUseCase initialCehMappingUseCase,
-                                SignalEventPayloadFactory payloadFactory,
                                 SignalAuditService signalAuditService,
-                                CircuitBreakerRegistry circuitBreakerRegistry,
-                                DataDistributorProperties properties) {
-    this.webClient = webClient;
-    this.feignClient = feignClient;
+                                DataDistributorProperties properties,
+                                ErrorClassifier errorClassifier) {
+    this.blockingClient = blockingClient;
+    this.reactiveClient = reactiveClient;
     this.initialCehMappingUseCase = initialCehMappingUseCase;
-    this.payloadFactory = payloadFactory;
     this.signalAuditService = signalAuditService;
     this.properties = properties;
-    this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("signalEventApi");
+    this.errorClassifier = errorClassifier;
     this.maxConcurrentRequests = Math.max(1, properties.getProcessing().getRateLimit());
   }
 
@@ -91,66 +75,15 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
       log.debug("➡️  [{}] Sending uabsEventId={} to {}", seq, event.getUabsEventId(), targetBaseUrl);
     }
 
-    if (properties.getExternalApi().isSyncEnabled()) {
-      return Mono.fromCallable(() -> sendWithFeign(event))
-          .map(this::hasCehEventId)
-          .onErrorResume(ex -> {
-            handleException(event, ex);
-            return Mono.just(false);
-          });
-    }
+    SignalEventClient client = properties.getExternalApi().isUseBlockingClient() ? blockingClient : reactiveClient;
 
-    return webClient.post()
-        .uri(properties.getExternalApi().getBaseUrl() + properties.getExternalApi().getWriteSignalPath())
-        .bodyValue(payloadFactory.buildPayload(event))
-        .exchangeToMono(clientResponse -> clientResponse
-            .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-            .defaultIfEmpty(Collections.emptyMap())
-            .map(body -> new ApiResponse(body, clientResponse.rawStatusCode())))
-        .timeout(Duration.ofSeconds(properties.getExternalApi().getRequestTimeoutSeconds()))
-        .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
-        .retryWhen(buildRetrySpec(event.getUabsEventId()))
+    return client.send(event)
         .doOnSuccess(response -> handleSuccess(event, response))
         .map(response -> hasCehEventId(response == null ? null : response.body()))
-        .doOnError(ex -> handleException(event, ex))
-        .onErrorReturn(false);
-  }
-
-  private Map<String, Object> sendWithFeign(SignalEvent event) {
-    SignalEventPayload payload = payloadFactory.buildPayload(event);
-    SignalEventResponse response = feignClient.postSignalEvent(payload);
-    Map<String, Object> body = toResponseBody(response);
-    handleSuccess(event, new ApiResponse(body, 200));
-    return body;
-  }
-
-  private Retry buildRetrySpec(long uabsEventId) {
-    var retry = properties.getExternalApi().getRetry();
-    return Retry
-        .backoff(retry.getAttempts(), Duration.ofSeconds(retry.getBackoffSeconds()))
-        .maxBackoff(Duration.ofSeconds(retry.getMaxBackoffSeconds()))
-        .filter(this::isRetryable)
-        .doAfterRetry(retrySignal ->
-            log.warn("🔁 Retry attempt #{} for uabsEventId={} cause={} breakerState={}",
-                retrySignal.totalRetries() + 1,
-                uabsEventId,
-                retrySignal.failure() == null ? "unknown" : retrySignal.failure().toString(),
-                circuitBreaker.getState()));
-  }
-
-  private boolean isRetryable(Throwable ex) {
-    if (ex instanceof PrematureCloseException) return true;
-    if (ex instanceof WebClientRequestException) return true;
-    if (ex instanceof IOException) return true;
-    if (ex instanceof io.github.resilience4j.circuitbreaker.CallNotPermittedException) return true; // retry after breaker cool-down
-    if (ex instanceof WebClientResponseException wcre) {
-      int status = wcre.getRawStatusCode();
-      if (status == 429) return true;
-      if (status >= 500 && status < 600) return true;
-      return false;
-    }
-    if (ex instanceof java.util.concurrent.TimeoutException) return true;
-    return false;
+        .onErrorResume(ex -> {
+          handleException(event, ex);
+          return Mono.just(false);
+        });
   }
 
   private void handleSuccess(SignalEvent event, ApiResponse response) {
@@ -177,54 +110,18 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
   }
 
   private void handleException(SignalEvent event, Throwable ex) {
-    String status;
-    String reason;
-
-    if (ex instanceof WebClientResponseException wcre) {
-      int code = wcre.getRawStatusCode();
-      if (code == 429 || (code >= 500 && code < 600)) {
-        status = "FAIL_TRANSIENT";
-        reason = shortReason(ex, "HTTP_" + code);
-      } else {
-        status = "FAIL_PERMANENT";
-        reason = shortReason(ex, "HTTP_" + code);
-      }
-    } else if (ex instanceof java.util.concurrent.TimeoutException) {
-      status = "TIMEOUT";
-      reason = shortReason(ex, "TIMEOUT");
-    } else if (ex instanceof io.github.resilience4j.circuitbreaker.CallNotPermittedException) {
-      status = "BLOCKED_BY_CIRCUIT";
-      reason = "BLOCKED_BY_CIRCUIT";
-    } else if (ex instanceof WebClientRequestException
-        || ex instanceof PrematureCloseException
-        || ex instanceof IOException) {
-      status = "FAIL_TRANSIENT";
-      reason = shortReason(ex, "IO_ERROR");
-    } else if (ex instanceof InterruptedException) {
-      status = "INTERRUPTED";
-      reason = "INTERRUPTED";
-    } else {
-      status = "FAIL_UNKNOWN";
-      reason = shortReason(ex, "UNKNOWN");
-    }
-
-    String responseCode;
-    if (ex instanceof WebClientResponseException wcrex) {
-      responseCode = String.valueOf(wcrex.getRawStatusCode());
-    } else {
-      responseCode = "N/A";
-    }
+    FailureClassification failure = errorClassifier.classify(ex);
 
     log.warn("💾 Persisting FAIL for uabsEventId={} | status={} | reason={} | error={}",
-        event.getUabsEventId(), status, reason, ex.toString());
+        event.getUabsEventId(), failure.status(), failure.reason(), ex.toString());
     try {
-      signalAuditService.persistAudit(event, status, responseCode, ex.getClass().getSimpleName() + ": " + ex.getMessage());
+      signalAuditService.persistAudit(event, failure.status(), failure.responseCode(), ex.getClass().getSimpleName() + ": " + ex.getMessage());
     } catch (Exception auditEx) {
       signalAuditService.logAuditFailure(event, auditEx);
     }
 
     log.error("❌ Final failure for uabsEventId={} | status={} | error={} | thread={}",
-        event.getUabsEventId(), status, ex.toString(), Thread.currentThread().getName());
+        event.getUabsEventId(), failure.status(), ex.toString(), Thread.currentThread().getName());
   }
 
   private long parseLongSafely(Object value) {
@@ -234,29 +131,7 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
     return Long.parseLong(String.valueOf(value));
   }
 
-  private String shortReason(Throwable ex, String defaultReason) {
-    String cls = ex == null ? null : ex.getClass().getSimpleName();
-    if (cls == null || cls.isBlank()) {
-      return defaultReason;
-    }
-    return cls.length() > 32 ? cls.substring(0, 32) : cls;
-  }
-
   private boolean hasCehEventId(Map<String, Object> body) {
     return body != null && body.get("ceh_event_id") != null;
-  }
-
-  private Map<String, Object> toResponseBody(SignalEventResponse response) {
-    if (response == null) {
-      return Collections.emptyMap();
-    }
-    Map<String, Object> body = new HashMap<>();
-    if (response.cehEventId() != null) {
-      body.put("ceh_event_id", response.cehEventId());
-    }
-    return body;
-  }
-
-  private record ApiResponse(Map<String, Object> body, int statusCode) {
   }
 }

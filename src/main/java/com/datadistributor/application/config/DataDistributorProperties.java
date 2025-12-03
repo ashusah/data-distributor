@@ -28,7 +28,10 @@ public class DataDistributorProperties {
     private String publisherId = "0bfe5670-457d-4872-a1f1-efe4db39f099";
     @Min(1)
     private long requestTimeoutSeconds = 15;
-    private boolean syncEnabled = false;
+    /**
+     * When true, use Feign (blocking) client; otherwise WebClient.
+     */
+    private boolean useBlockingClient = false;
     private Retry retry = new Retry();
 
     @Data
