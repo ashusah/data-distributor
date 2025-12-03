@@ -51,10 +51,8 @@ class SignalEventDeliveryReportFileTest {
     Path reportFile = publisher.writtenFile;
     assertThat(reportFile).exists();
     String content = Files.readString(reportFile);
-    assertThat(content).contains("UABS DELIVERY TO CEH REPORT");
-    assertThat(content).contains("Total number of events for Date 2025-12-02 = 3");
-    assertThat(content).contains("PASS status- 2");
-    assertThat(content).contains("not sent to CEH (with FAIL status)- 1");
+    String expected = Files.readString(Path.of("src/test/resources/fixtures/ceh-report-expected.txt")).trim();
+    assertThat(content.trim()).isEqualTo(expected);
   }
 
   private SignalEvent sampleEvent(Long id) {

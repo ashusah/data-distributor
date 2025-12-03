@@ -1,0 +1,4 @@
+UABS DELIVERY TO CEH REPORT
+Total number of events for Date 2025-12-02 = 3
+Total number of events sent to CEH with PASS status- 2
+Total number of events not sent to CEH (with FAIL status)- 1

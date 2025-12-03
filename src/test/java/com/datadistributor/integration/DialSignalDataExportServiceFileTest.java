@@ -36,9 +36,9 @@ class DialSignalDataExportServiceFileTest {
 
     Path expected = tempDir.resolve("dial").resolve("dial-prefix-2025-12-02.csv");
     assertThat(expected).exists();
-    String content = Files.readString(expected);
-    assertThat(content).contains("uabs_event_id");
-    assertThat(content).contains("10");
+    String content = Files.readString(expected).trim();
+    String fixture = Files.readString(Path.of("src/test/resources/fixtures/dial-export-expected.csv")).trim();
+    assertThat(content).isEqualTo(fixture);
   }
 
   private SignalEvent sampleEvent(Long id) {
@@ -46,9 +46,13 @@ class DialSignalDataExportServiceFileTest {
     e.setUabsEventId(id);
     e.setSignalId(100L + id);
     e.setAgreementId(200L + id);
-    e.setEventRecordDateTime(LocalDateTime.now());
+    e.setEventRecordDateTime(LocalDateTime.of(2025, 12, 2, 10, 15, 30));
     e.setEventType("TYPE");
     e.setEventStatus("STATUS");
+    e.setUnauthorizedDebitBalance(500L);
+    e.setBookDate(LocalDate.of(2025, 12, 1));
+    e.setGrv((short) 1);
+    e.setProductId((short) 2);
     return e;
   }
 
