@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 @Repository
 public interface SignalEventJpaRepository extends JpaRepository<SignalEventJpaEntity, Long> {
     List<SignalEventJpaEntity> findByEventRecordDateTimeBetween(LocalDateTime start, LocalDateTime end);
+    List<SignalEventJpaEntity> findByUabsEventIdIn(List<Long> uabsEventIds);
 
     long countByEventRecordDateTimeBetween(LocalDateTime start, LocalDateTime end);
 

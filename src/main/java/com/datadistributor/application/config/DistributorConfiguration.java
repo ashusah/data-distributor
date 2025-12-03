@@ -4,6 +4,7 @@ import com.datadistributor.domain.inport.AccountBalanceQueryUseCase;
 import com.datadistributor.domain.inport.InitialCehMappingUseCase;
 import com.datadistributor.domain.inport.InitialCehQueryUseCase;
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
+import com.datadistributor.domain.inport.SignalEventRetryUseCase;
 import com.datadistributor.domain.inport.SignalEventUseCase;
 import com.datadistributor.domain.job.JobProgressTracker;
 import com.datadistributor.domain.outport.DeliveryReportPublisher;
@@ -21,6 +22,7 @@ import com.datadistributor.domain.service.DialSignalDataExportService;
 import com.datadistributor.domain.service.SignalQueryService;
 import com.datadistributor.domain.service.SignalEventDomainService;
 import com.datadistributor.domain.service.SignalEventProcessingService;
+import com.datadistributor.domain.service.SignalEventRetryService;
 import com.datadistributor.domain.inport.SignalQueryUseCase;
 import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
 import com.datadistributor.domain.service.SignalDispatchSelector;
@@ -64,6 +66,20 @@ public class DistributorConfiguration {
             properties.getProcessing().getBatchSize(),
             jobProgressTracker,
             deliveryReportPublisher);
+    }
+
+    @Bean
+    SignalEventRetryUseCase signalEventRetryUseCase(SignalAuditQueryPort signalAuditQueryPort,
+                                                    SignalEventRepository signalEventRepository,
+                                                    SignalEventBatchPort signalEventBatchPort,
+                                                    JobProgressTracker jobProgressTracker,
+                                                    DataDistributorProperties properties) {
+        return new SignalEventRetryService(
+            signalAuditQueryPort,
+            signalEventRepository,
+            signalEventBatchPort,
+            jobProgressTracker,
+            properties.getProcessing().getBatchSize());
     }
 
     @Bean

@@ -102,8 +102,13 @@ public class DataDistributorProperties {
     private boolean enable2am = true;
     private boolean enableMon10 = true;
     private boolean enableMon12 = true;
+    private boolean enableRetry = true;
     private String signal2amCron = "0 0 2 * * *";
     private String signalMon10Cron = "0 0 10 * * MON";
     private String signalMon12Cron = "0 0 12 * * MON";
+    /**
+     * Hourly from 13:00 to 23:00 every day except Monday.
+     */
+    private String retryCron = "0 0 13-23 * * TUE,WED,THU,FRI,SAT,SUN";
   }
 }

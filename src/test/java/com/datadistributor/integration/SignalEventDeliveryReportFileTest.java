@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
@@ -101,6 +102,17 @@ class SignalEventDeliveryReportFileTest {
     public Optional<SignalEvent> getEarliestOverlimitEvent(Long signalId) {
       return events.stream().findFirst();
     }
+
+    @Override
+    public List<SignalEvent> findByUabsEventIdIn(List<Long> uabsEventIds) {
+      if (uabsEventIds == null) {
+        return Collections.emptyList();
+      }
+      return uabsEventIds.stream()
+          .map(id -> events.stream().filter(e -> id.equals(e.getUabsEventId())).findFirst().orElse(null))
+          .filter(Objects::nonNull)
+          .toList();
+    }
   }
 
   private static class StubBatchPort implements SignalEventBatchPort {
@@ -120,6 +132,11 @@ class SignalEventDeliveryReportFileTest {
     @Override
     public boolean isEventSuccessful(Long uabsEventId, long consumerId) {
       return true;
+    }
+
+    @Override
+    public List<Long> findFailedEventIdsForDate(LocalDate date) {
+      return Collections.emptyList();
     }
   }
 

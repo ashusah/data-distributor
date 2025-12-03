@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -408,6 +409,17 @@ class SignalDispatchSelectorTest {
           })
           .findFirst();
     }
+
+    @Override
+    public List<SignalEvent> findByUabsEventIdIn(List<Long> uabsEventIds) {
+      if (uabsEventIds == null) {
+        return List.of();
+      }
+      return uabsEventIds.stream()
+          .map(id -> events.stream().filter(e -> id.equals(e.getUabsEventId())).findFirst().orElse(null))
+          .filter(Objects::nonNull)
+          .toList();
+    }
   }
 
   private static class InMemorySignalPort implements SignalPort {
@@ -427,6 +439,7 @@ class SignalDispatchSelectorTest {
     private final Set<Long> successIds = new HashSet<>();
     void markSuccess(Long uabsEventId) { if (uabsEventId != null) successIds.add(uabsEventId); }
     @Override public boolean isEventSuccessful(Long uabsEventId, long consumerId) { return successIds.contains(uabsEventId); }
+    @Override public List<Long> findFailedEventIdsForDate(LocalDate date) { return List.of(); }
   }
 
   private static class InMemoryInitialCehPort implements InitialCehMappingPort {

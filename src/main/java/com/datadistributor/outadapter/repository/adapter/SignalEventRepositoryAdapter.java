@@ -9,6 +9,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -77,5 +81,25 @@ public class SignalEventRepositoryAdapter implements SignalEventRepository {
         return signalEventJpaRepository.findFirstBySignalIdAndEventStatusOrderByEventRecordDateTimeAsc(
                 signalId, "OVERLIMIT_SIGNAL")
             .map(signalEventMapper::toDomain);
+    }
+
+    @Override
+    public List<SignalEvent> findByUabsEventIdIn(List<Long> uabsEventIds) {
+        if (uabsEventIds == null || uabsEventIds.isEmpty()) {
+            return List.of();
+        }
+        List<SignalEventJpaEntity> eventEntities = signalEventJpaRepository.findByUabsEventIdIn(uabsEventIds);
+        Map<Long, SignalEvent> byId = eventEntities.stream()
+            .map(signalEventMapper::toDomain)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toMap(
+                SignalEvent::getUabsEventId,
+                Function.identity(),
+                (first, second) -> first));
+
+        return uabsEventIds.stream()
+            .map(byId::get)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
 }
