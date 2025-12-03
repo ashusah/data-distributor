@@ -1,2 +1,2 @@
-uabs_event_id,signal_id,agreement_id,event_record_date_time,event_type,event_status,unauthorized_debit_balance,book_date,grv,product_id
-10,110,210,2025-12-02T10:15:30,TYPE,STATUS,500,2025-12-01,1,2
+AccountNumber,IBAN,CustomerId,GRV,ProductId,CurrencyCode,SignalStartDate,SignalEndDate,SignalType,DebitAmount,BookDate
+999,DE1234567890123456,321,1,2,EUR,2025-12-01,2025-12-03,OVERLIMIT_SIGNAL,500,2025-12-01

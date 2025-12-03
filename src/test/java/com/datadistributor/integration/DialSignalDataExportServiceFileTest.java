@@ -6,6 +6,10 @@ import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.SignalEventUseCase;
 import com.datadistributor.domain.outport.FileStoragePort;
+import com.datadistributor.domain.inport.SignalQueryUseCase;
+import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
+import com.datadistributor.domain.AccountBalanceOverview;
+import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.service.DialSignalDataExportService;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +34,8 @@ class DialSignalDataExportServiceFileTest {
     var events = List.of(sampleEvent(10L));
     var service = new DialSignalDataExportService(
         new StubSignalEventUseCase(events),
+        new StubSignalQueryUseCase(),
+        new StubAccountBalancePort(),
         new FileWritingStorage(),
         props);
 
@@ -72,6 +78,41 @@ class DialSignalDataExportServiceFileTest {
     @Override
     public List<SignalEvent> getAllSignalForCEH(LocalDate date) {
       return events;
+    }
+  }
+
+  private static class StubSignalQueryUseCase implements SignalQueryUseCase {
+    @Override
+    public java.util.Optional<Signal> findBySignalId(Long signalId) {
+      Signal s = new Signal();
+      s.setSignalId(signalId);
+      s.setAgreementId(999L);
+      s.setSignalStartDate(LocalDate.of(2025, 12, 1));
+      s.setSignalEndDate(LocalDate.of(2025, 12, 3));
+      return java.util.Optional.of(s);
+    }
+
+    @Override
+    public java.util.Optional<Signal> findByAgreementId(Long agreementId) {
+      return java.util.Optional.empty();
+    }
+  }
+
+  private static class StubAccountBalancePort implements AccountBalanceOverviewPort {
+    @Override
+    public java.util.Optional<Long> findBcNumberByAgreementId(Long agreementId) {
+      return java.util.Optional.of(321L);
+    }
+
+    @Override
+    public java.util.Optional<AccountBalanceOverview> findByAgreementId(Long agreementId) {
+      AccountBalanceOverview abo = new AccountBalanceOverview();
+      abo.setAgreementId(agreementId);
+      abo.setBcNumber(321L);
+      abo.setIban("DE1234567890123456");
+      abo.setCurrencyCode("EUR");
+      abo.setGrv((short) 1);
+      return java.util.Optional.of(abo);
     }
   }
 

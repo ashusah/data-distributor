@@ -5,6 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.SignalEventUseCase;
+import com.datadistributor.domain.inport.SignalQueryUseCase;
+import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
+import com.datadistributor.domain.AccountBalanceOverview;
+import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.outport.FileStoragePort;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,7 +28,12 @@ class DialSignalDataExportServiceTest {
     props.getStorage().setDialFolder("dial-folder");
     props.getStorage().setDialFilePrefix("dial-prefix");
 
-    service = new DialSignalDataExportService(new StubSignalEventUseCase(), storage, props);
+    service = new DialSignalDataExportService(
+        new StubSignalEventUseCase(),
+        new StubSignalQueryUseCase(),
+        new StubAccountPort(),
+        storage,
+        props);
   }
 
   @Test
@@ -38,8 +47,8 @@ class DialSignalDataExportServiceTest {
 
     assertThat(storage.folder).isEqualTo("dial-folder");
     assertThat(storage.fileName).isEqualTo("dial-prefix-2025-12-02.csv");
-    assertThat(storage.content).contains("uabs_event_id");
-    assertThat(storage.content).contains("1,11");
+    assertThat(storage.content).contains("AccountNumber");
+    assertThat(storage.content).contains("999");
   }
 
   private static class CapturingStorage implements FileStoragePort {
@@ -64,6 +73,40 @@ class DialSignalDataExportServiceTest {
     @Override
     public List<SignalEvent> getAllSignalForCEH(LocalDate date) {
       return events;
+    }
+  }
+
+  private static class StubSignalQueryUseCase implements SignalQueryUseCase {
+    @Override
+    public java.util.Optional<Signal> findBySignalId(Long signalId) {
+      Signal s = new Signal();
+      s.setSignalId(signalId);
+      s.setAgreementId(999L);
+      s.setSignalStartDate(LocalDate.of(2025, 12, 1));
+      s.setSignalEndDate(LocalDate.of(2025, 12, 3));
+      return java.util.Optional.of(s);
+    }
+
+    @Override
+    public java.util.Optional<Signal> findByAgreementId(Long agreementId) {
+      return java.util.Optional.empty();
+    }
+  }
+
+  private static class StubAccountPort implements AccountBalanceOverviewPort {
+    @Override
+    public java.util.Optional<Long> findBcNumberByAgreementId(Long agreementId) {
+      return java.util.Optional.of(321L);
+    }
+
+    @Override
+    public java.util.Optional<AccountBalanceOverview> findByAgreementId(Long agreementId) {
+      AccountBalanceOverview abo = new AccountBalanceOverview();
+      abo.setAgreementId(agreementId);
+      abo.setIban("DE1234567890123456");
+      abo.setCurrencyCode("EUR");
+      abo.setBcNumber(321L);
+      return java.util.Optional.of(abo);
     }
   }
 }

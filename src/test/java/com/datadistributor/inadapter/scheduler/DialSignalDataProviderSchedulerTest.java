@@ -5,6 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.service.DialSignalDataExportService;
 import com.datadistributor.domain.inport.SignalEventUseCase;
+import com.datadistributor.domain.inport.SignalQueryUseCase;
+import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
+import com.datadistributor.domain.AccountBalanceOverview;
+import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.outport.FileStoragePort;
 import java.time.Clock;
 import java.time.Instant;
@@ -30,7 +34,7 @@ class DialSignalDataProviderSchedulerTest {
     LocalDate lastDate;
 
     CapturingExportService() {
-      super(dummyUseCase(), dummyStorage(), new DataDistributorProperties());
+      super(dummyUseCase(), dummySignalQuery(), dummyAccountPort(), dummyStorage(), new DataDistributorProperties());
     }
 
     @Override
@@ -54,6 +58,34 @@ class DialSignalDataProviderSchedulerTest {
 
     private static FileStoragePort dummyStorage() {
       return (folder, fileName, content) -> {};
+    }
+
+    private static SignalQueryUseCase dummySignalQuery() {
+      return new SignalQueryUseCase() {
+        @Override
+        public java.util.Optional<Signal> findBySignalId(Long signalId) {
+          return java.util.Optional.empty();
+        }
+
+        @Override
+        public java.util.Optional<Signal> findByAgreementId(Long agreementId) {
+          return java.util.Optional.empty();
+        }
+      };
+    }
+
+    private static AccountBalanceOverviewPort dummyAccountPort() {
+      return new AccountBalanceOverviewPort() {
+        @Override
+        public java.util.Optional<Long> findBcNumberByAgreementId(Long agreementId) {
+          return java.util.Optional.empty();
+        }
+
+        @Override
+        public java.util.Optional<AccountBalanceOverview> findByAgreementId(Long agreementId) {
+          return java.util.Optional.empty();
+        }
+      };
     }
   }
 

@@ -10,6 +10,7 @@ import com.datadistributor.domain.outport.DeliveryReportPublisher;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
 import com.datadistributor.domain.service.SignalEventProcessingService;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,6 +39,7 @@ class SignalEventDeliveryReportFileTest {
         repository,
         batchPort,
         new AlwaysPassAuditQueryPort(),
+        new StubDispatchSelector(repository),
         5,
         new JobProgressTracker(),
         publisher);
@@ -94,6 +96,11 @@ class SignalEventDeliveryReportFileTest {
     public Optional<SignalEvent> getPreviousEvent(Long signalId, LocalDateTime before) {
       return Optional.empty();
     }
+
+    @Override
+    public Optional<SignalEvent> getEarliestOverlimitEvent(Long signalId) {
+      return events.stream().findFirst();
+    }
   }
 
   private static class StubBatchPort implements SignalEventBatchPort {
@@ -113,6 +120,15 @@ class SignalEventDeliveryReportFileTest {
     @Override
     public boolean isEventSuccessful(Long uabsEventId, long consumerId) {
       return true;
+    }
+  }
+
+  private static class StubDispatchSelector implements SignalDispatchSelectorUseCase {
+    private final SignalEventRepository repo;
+    StubDispatchSelector(SignalEventRepository repo) { this.repo = repo; }
+    @Override
+    public List<SignalEvent> selectEventsToSend(LocalDate targetDate) {
+      return repo.getSignalEventsForCEH(targetDate, 0, 100);
     }
   }
 
