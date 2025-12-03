@@ -16,6 +16,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Retries delivery for failed signal events of a given date. Pulls failed audit entries for that
+ * day, resolves the corresponding signal events, and re-sends them one by one using the configured
+ * sender (blocking or reactive under the hood). Missing events are counted as failures.
+ *
+ * <p>Example: if uabsEventId 10 failed twice on 2024-12-03, this service will fetch that id,
+ * reload the event, send it once, and mark success/failure in the result; if the event row is gone,
+ * it counts as a failure.</p>
+ */
 @Slf4j
 public class SignalEventRetryService implements SignalEventRetryUseCase {
 

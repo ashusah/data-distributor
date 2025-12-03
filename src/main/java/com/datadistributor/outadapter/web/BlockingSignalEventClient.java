@@ -7,6 +7,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Qualifier;
 import reactor.core.publisher.Mono;
 
+/**
+ * Blocking implementation that delegates to Feign. Used when configuration requests the blocking
+ * client. Wraps the synchronous response in a Mono for a uniform caller contract.
+ */
 @Component("blockingSignalEventClient")
 public class BlockingSignalEventClient implements SignalEventClient {
 

@@ -11,6 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * Hourly retry driver (13:00–23:00 except Monday). When enabled, invokes the retry use case for
+ * the current date to re-send failed events. Skips if disabled or if day is Monday.
+ */
 @Component
 @Slf4j
 public class SignalEventRetryScheduler {

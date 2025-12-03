@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 
+/**
+ * Spring Data JPA repository for signal events with custom queries used by CEH flow and selector.
+ */
 @Repository
 public interface SignalEventJpaRepository extends JpaRepository<SignalEventJpaEntity, Long> {
     List<SignalEventJpaEntity> findByEventRecordDateTimeBetween(LocalDateTime start, LocalDateTime end);

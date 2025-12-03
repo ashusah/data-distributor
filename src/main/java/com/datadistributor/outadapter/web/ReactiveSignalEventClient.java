@@ -19,6 +19,10 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.PrematureCloseException;
 import reactor.util.retry.Retry;
 
+/**
+ * Reactive implementation using WebClient with retry and circuit breaker. Honors timeout and retry
+ * settings from properties. Used when non-blocking client is configured.
+ */
 @Component("reactiveSignalEventClient")
 @Slf4j
 public class ReactiveSignalEventClient implements SignalEventClient {

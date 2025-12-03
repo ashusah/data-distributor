@@ -17,6 +17,11 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Outbound adapter that posts signal events to CEH using either blocking Feign or reactive
+ * WebClient, depending on configuration. Supports batch submission (async) for the main flow and
+ * single-event send for retries. Persists audit entries for PASS/FAIL and maps initial CEH ids.
+ */
 @Component
 @Slf4j
 public class SignalEventBatchSender implements SignalEventBatchPort, SignalEventSenderPort {

@@ -17,6 +17,10 @@ import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+/**
+ * JPA-backed repository adapter for signal events, enforcing business filters (balance threshold,
+ * book-date lookback) used in the CEH flow.
+ */
 @Repository
 public class SignalEventRepositoryAdapter implements SignalEventRepository {
 

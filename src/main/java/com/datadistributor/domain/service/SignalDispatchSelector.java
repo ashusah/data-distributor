@@ -18,6 +18,21 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Selects which signal events to send for a given processing date. Rules:
+ * <ul>
+ *   <li>Send earliest OVERLIMIT when balance is breached (&gt;= threshold) on the day.</li>
+ *   <li>Send earliest OVERLIMIT when the signal has been open longer than the DPD threshold, even
+ *       if no event exists for the day (overdue dispatch).</li>
+ *   <li>Send closure OUT_OF_OVERLIMIT when balance reaches zero.</li>
+ *   <li>Skip signals whose initial CEH mapping already exists (OVERLIMIT already sent).</li>
+ *   <li>Skip signals closed within threshold without breach.</li>
+ * </ul>
+ *
+ * <p>Examples:
+ * <br>- DPD6 with only the opening OVERLIMIT on DPD1: sends that DPD1 event on DPD6 (overdue).
+ * <br>- Multiple events same day (OVERLIMIT + FINANCIAL_UPDATE): picks earliest OVERLIMIT.</p>
+ */
 @RequiredArgsConstructor
 public class SignalDispatchSelector implements SignalDispatchSelectorUseCase {
 

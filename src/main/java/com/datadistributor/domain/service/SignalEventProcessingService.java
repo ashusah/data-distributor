@@ -22,6 +22,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Coordinates daily signal-event delivery to CEH: validates prerequisites, selects events, batches
+ * them to the outbound client, and emits a delivery report. The selector can return zero items,
+ * in which case the legacy paging flow is used for backward compatibility.
+ *
+ * <p>Prerequisite rule: a signal event for a date is blocked if its prior event (same signal) is
+ * not marked PASS in audit for the CEH consumer. Example: if a 2024-12-02 event failed delivery,
+ * the 2024-12-03 event will not be sent until the prior one succeeds.</p>
+ */
 @Slf4j
 public class SignalEventProcessingService implements SignalEventProcessingUseCase {
 
@@ -49,6 +58,19 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
     this.deliveryReportPublisher = deliveryReportPublisher;
   }
 
+  /**
+   * Processes all events for the given date. Steps:
+   * <ol>
+   *   <li>Validate prior events (blocks if yesterday's event for the same signal is not PASS).</li>
+   *   <li>Select events via the dispatch selector; if none, fall back to legacy paging.</li>
+   *   <li>Submit batches to the outbound sender and wait for completion.</li>
+   *   <li>Publish a delivery report (success/failure totals).</li>
+   * </ol>
+   *
+   * @param jobId optional tracking id
+   * @param date processing date (required)
+   * @return summary result (success, failure, total, message)
+   */
   @Override
   public JobResult processEventsForDate(String jobId, LocalDate date) {
     if (date == null) {
@@ -159,6 +181,11 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
     return chunks;
   }
 
+  /**
+   * Ensures that for any event on {@code date}, its immediately preceding event for the same
+   * signal has a PASS audit. Example: if a signal has events on Dec 2 and Dec 3, the Dec 3 event is
+   * blocked when the Dec 2 audit is missing or not PASS.
+   */
   private Optional<String> validatePriorEvents(LocalDate date) {
     List<SignalEvent> eventsForDate = signalEventRepository.getAllSignalEventsOfThisDate(date);
     if (eventsForDate.isEmpty()) {
@@ -196,6 +223,10 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
     return Optional.of(message);
   }
 
+  /**
+   * Publishes a simple text report to the configured publisher. Failures to publish are logged but
+   * do not fail the job.
+   */
   private void publishReport(LocalDate date, JobResult result) {
     if (deliveryReportPublisher == null) {
       return;
@@ -215,6 +246,7 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
     }
   }
 
+  /** Builds the CEH delivery report body. */
   private String buildReportContent(LocalDate date, JobResult result) {
     return """
         UABS DELIVERY TO CEH REPORT

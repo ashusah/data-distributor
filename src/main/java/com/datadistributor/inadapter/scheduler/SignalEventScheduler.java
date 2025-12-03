@@ -12,7 +12,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Inbound adapter: time-based driver that triggers the SignalEvent processing use case.
+ * Triggers the main signal-event processing use case on configured schedules:
+ * <ul>
+ *   <li>02:00 daily (Tue–Sat) for current date.</li>
+ *   <li>Monday 10:00 for Sunday.</li>
+ *   <li>Monday 12:00 for Monday.</li>
+ * </ul>
+ * Skips runs when disabled via properties.
  */
 @Component
 @Slf4j

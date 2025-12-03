@@ -14,6 +14,10 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Provides audit lookup helpers: checks last status for an event and lists failed event ids for a
+ * given date (latest audit per event). Normalizes PASS/SUCCESS status strings.
+ */
 @Repository
 @RequiredArgsConstructor
 public class SignalAuditQueryRepositoryAdapter implements SignalAuditQueryPort {
