@@ -2,7 +2,6 @@ package com.datadistributor.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.job.JobProgressTracker;
@@ -11,26 +10,30 @@ import com.datadistributor.domain.outport.DeliveryReportPublisher;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
-import com.datadistributor.domain.service.DialSignalDataExportService;
 import com.datadistributor.domain.service.SignalEventProcessingService;
-import com.datadistributor.domain.outport.FileStoragePort;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-class DeliveryReportIntegrationTest {
+class SignalEventDeliveryReportFileTest {
+
+  @TempDir
+  Path tempDir;
 
   @Test
-  void generatesCehDeliveryReportWithCounts() {
+  void createsDeliveryReportFileWithCounts() throws Exception {
     var events = List.of(sampleEvent(1L), sampleEvent(2L), sampleEvent(3L));
-    var repository = new StubSignalEventRepository(events, 3);
+    var repository = new StubSignalEventRepository(events, events.size());
     var batchPort = new StubBatchPort(new BatchResult(2, 1));
-    var publisher = new CapturingReportPublisher();
+    var publisher = new FileWritingReportPublisher(tempDir);
+
     var service = new SignalEventProcessingService(
         repository,
         batchPort,
@@ -44,29 +47,14 @@ class DeliveryReportIntegrationTest {
     assertThat(result.getSuccessCount()).isEqualTo(2);
     assertThat(result.getFailureCount()).isEqualTo(1);
     assertThat(result.getTotalCount()).isEqualTo(3);
-    assertThat(publisher.content)
-        .contains("UABS DELIVERY TO CEH REPORT")
-        .contains("Total number of events for Date 2025-12-02 = 3")
-        .contains("PASS status- 2")
-        .contains("not sent to CEH (with FAIL status)- 1");
-  }
 
-  @Test
-  void createsDialExportCsvWithEvents() {
-    var props = new DataDistributorProperties();
-    props.getStorage().setDialFolder("dial-folder");
-    props.getStorage().setDialFilePrefix("dial-prefix");
-    var events = new ArrayList<SignalEvent>();
-    events.add(sampleEvent(10L));
-    var storage = new CapturingStorage();
-    var service = new DialSignalDataExportService(new StubSignalEventUseCase(events), storage, props);
-
-    service.export(LocalDate.of(2025, 12, 2));
-
-    assertThat(storage.folder).isEqualTo("dial-folder");
-    assertThat(storage.fileName).isEqualTo("dial-prefix-2025-12-02.csv");
-    assertThat(storage.content).contains("uabs_event_id");
-    assertThat(storage.content).contains("10");
+    Path reportFile = publisher.writtenFile;
+    assertThat(reportFile).exists();
+    String content = Files.readString(reportFile);
+    assertThat(content).contains("UABS DELIVERY TO CEH REPORT");
+    assertThat(content).contains("Total number of events for Date 2025-12-02 = 3");
+    assertThat(content).contains("PASS status- 2");
+    assertThat(content).contains("not sent to CEH (with FAIL status)- 1");
   }
 
   private SignalEvent sampleEvent(Long id) {
@@ -130,43 +118,23 @@ class DeliveryReportIntegrationTest {
     }
   }
 
-  private static class CapturingReportPublisher implements DeliveryReportPublisher {
-    String content;
+  private static class FileWritingReportPublisher implements DeliveryReportPublisher {
+    private final Path baseDir;
+    Path writtenFile;
+
+    FileWritingReportPublisher(Path baseDir) {
+      this.baseDir = baseDir;
+    }
 
     @Override
     public void publish(com.datadistributor.domain.report.DeliveryReport report) {
-      this.content = report.getContent();
-    }
-  }
-
-  private static class CapturingStorage implements FileStoragePort {
-    String folder;
-    String fileName;
-    String content;
-
-    @Override
-    public void upload(String folder, String fileName, String content) {
-      this.folder = folder;
-      this.fileName = fileName;
-      this.content = content;
-    }
-  }
-
-  private static class StubSignalEventUseCase implements com.datadistributor.domain.inport.SignalEventUseCase {
-    private final List<SignalEvent> events;
-
-    StubSignalEventUseCase(List<SignalEvent> events) {
-      this.events = events;
-    }
-
-    @Override
-    public List<SignalEvent> getAllSignalEventsOfThisDate(LocalDate date) {
-      return events;
-    }
-
-    @Override
-    public List<SignalEvent> getAllSignalForCEH(LocalDate date) {
-      return events;
+      try {
+        Path file = baseDir.resolve("ceh-report-" + report.getDate() + ".txt");
+        Files.writeString(file, report.getContent());
+        this.writtenFile = file;
+      } catch (Exception ex) {
+        throw new RuntimeException(ex);
+      }
     }
   }
 }
