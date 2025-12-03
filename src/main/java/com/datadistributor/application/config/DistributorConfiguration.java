@@ -14,6 +14,7 @@ import com.datadistributor.domain.outport.InitialCehMappingPort;
 import com.datadistributor.domain.outport.FileStoragePort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventSenderPort;
 import com.datadistributor.domain.outport.SignalPort;
 import com.datadistributor.domain.service.AccountBalanceQueryService;
 import com.datadistributor.domain.service.InitialCehMappingService;
@@ -71,15 +72,11 @@ public class DistributorConfiguration {
     @Bean
     SignalEventRetryUseCase signalEventRetryUseCase(SignalAuditQueryPort signalAuditQueryPort,
                                                     SignalEventRepository signalEventRepository,
-                                                    SignalEventBatchPort signalEventBatchPort,
-                                                    JobProgressTracker jobProgressTracker,
-                                                    DataDistributorProperties properties) {
+                                                    SignalEventSenderPort signalEventSenderPort) {
         return new SignalEventRetryService(
             signalAuditQueryPort,
             signalEventRepository,
-            signalEventBatchPort,
-            jobProgressTracker,
-            properties.getProcessing().getBatchSize());
+            signalEventSenderPort);
     }
 
     @Bean

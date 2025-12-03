@@ -5,6 +5,7 @@ import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.InitialCehMappingUseCase;
 import com.datadistributor.domain.job.BatchResult;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
+import com.datadistributor.domain.outport.SignalEventSenderPort;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -18,7 +19,7 @@ import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
-public class SignalEventBatchSender implements SignalEventBatchPort {
+public class SignalEventBatchSender implements SignalEventBatchPort, SignalEventSenderPort {
 
   private final SignalEventClient blockingClient;
   private final SignalEventClient reactiveClient;
@@ -133,5 +134,15 @@ public class SignalEventBatchSender implements SignalEventBatchPort {
 
   private boolean hasCehEventId(Map<String, Object> body) {
     return body != null && body.get("ceh_event_id") != null;
+  }
+
+  @Override
+  public boolean send(SignalEvent event) {
+    try {
+      return postEventReactive(event).blockOptional().orElse(false);
+    } catch (Exception ex) {
+      log.error("❌ Retry send failed for uabsEventId={} | error={}", event.getUabsEventId(), ex.toString());
+      return false;
+    }
   }
 }
