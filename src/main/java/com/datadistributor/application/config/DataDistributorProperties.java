@@ -17,6 +17,7 @@ public class DataDistributorProperties {
   private Http http = new Http();
   private Azure azure = new Azure();
   private Storage storage = new Storage();
+  private Scheduler scheduler = new Scheduler();
 
   @Data
   public static class ExternalApi {
@@ -90,5 +91,16 @@ public class DataDistributorProperties {
     private String folder = "ceh";
     private String dialFolder = "dial";
     private String dialFilePrefix = "dial-signal-data";
+    private boolean dialSchedulerEnabled = true;
+  }
+
+  @Data
+  public static class Scheduler {
+    private boolean enable2am = true;
+    private boolean enableMon10 = true;
+    private boolean enableMon12 = true;
+    private String signal2amCron = "0 0 2 * * *";
+    private String signalMon10Cron = "0 0 10 * * MON";
+    private String signalMon12Cron = "0 0 12 * * MON";
   }
 }

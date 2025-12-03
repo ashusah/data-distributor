@@ -2,8 +2,8 @@ package com.datadistributor.inadapter.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.datadistributor.domain.service.DialSignalDataExportService;
 import com.datadistributor.application.config.DataDistributorProperties;
+import com.datadistributor.domain.service.DialSignalDataExportService;
 import com.datadistributor.domain.inport.SignalEventUseCase;
 import com.datadistributor.domain.outport.FileStoragePort;
 import java.time.Clock;
@@ -19,7 +19,7 @@ class DialSignalDataProviderSchedulerTest {
   void runsWithConfiguredOffset() {
     var fixedClock = Clock.fixed(Instant.parse("2025-12-02T06:00:00Z"), ZoneOffset.UTC);
     var exportService = new CapturingExportService();
-    var scheduler = new DialSignalDataProviderScheduler(exportService, 2, fixedClock);
+    var scheduler = new DialSignalDataProviderScheduler(exportService, 2, fixedClock, enabledProps());
 
     scheduler.runDialExport();
 
@@ -55,5 +55,11 @@ class DialSignalDataProviderSchedulerTest {
     private static FileStoragePort dummyStorage() {
       return (folder, fileName, content) -> {};
     }
+  }
+
+  private static DataDistributorProperties enabledProps() {
+    DataDistributorProperties props = new DataDistributorProperties();
+    props.getStorage().setDialSchedulerEnabled(true);
+    return props;
   }
 }

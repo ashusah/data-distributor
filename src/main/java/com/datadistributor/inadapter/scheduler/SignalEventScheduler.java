@@ -2,11 +2,12 @@ package com.datadistributor.inadapter.scheduler;
 
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
 import com.datadistributor.domain.job.JobResult;
+import com.datadistributor.application.config.DataDistributorProperties;
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -21,27 +22,28 @@ public class SignalEventScheduler {
   private final boolean enable2am;
   private final boolean enableMon10;
   private final boolean enableMon12;
+  private final Clock clock;
 
   public SignalEventScheduler(SignalEventProcessingUseCase processingUseCase,
-                              @Value("${data-distributor.scheduler.enable-2am:true}") boolean enable2am,
-                              @Value("${data-distributor.scheduler.enable-mon10:true}") boolean enableMon10,
-                              @Value("${data-distributor.scheduler.enable-mon12:true}") boolean enableMon12) {
+                              DataDistributorProperties properties,
+                              Clock clock) {
     this.processingUseCase = processingUseCase;
-    this.enable2am = enable2am;
-    this.enableMon10 = enableMon10;
-    this.enableMon12 = enableMon12;
+    this.enable2am = properties.getScheduler().isEnable2am();
+    this.enableMon10 = properties.getScheduler().isEnableMon10();
+    this.enableMon12 = properties.getScheduler().isEnableMon12();
+    this.clock = clock;
   }
 
   /**
    * Daily 02:00 run for Tue–Sat using today's date. Skip Sunday and Monday.
    */
-  @Scheduled(cron = "0 0 2 * * *")
+  @Scheduled(cron = "${data-distributor.scheduler.signal-2am-cron:0 0 2 * * *}")
   public void runDaily2am() {
     if (!enable2am) {
       log.warn("LOG_004: 2am schedule disabled via config");
       return;
     }
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(clock);
     DayOfWeek dow = today.getDayOfWeek();
     if (dow == DayOfWeek.SUNDAY || dow == DayOfWeek.MONDAY) {
       log.info("2am schedule skipped for {} ({})", today, dow);
@@ -53,26 +55,26 @@ public class SignalEventScheduler {
   /**
    * Monday 10:00 run using yesterday's date (Sunday).
    */
-  @Scheduled(cron = "0 0 10 * * MON")
+  @Scheduled(cron = "${data-distributor.scheduler.signal-mon10-cron:0 0 10 * * MON}")
   public void runMonday10am() {
     if (!enableMon10) {
       log.warn("LOG_004: Monday 10am schedule disabled via config");
       return;
     }
-    LocalDate targetDate = LocalDate.now().minusDays(1); // Sunday
+    LocalDate targetDate = LocalDate.now(clock).minusDays(1); // Sunday
     trigger("sched-mon-10", targetDate);
   }
 
   /**
    * Monday 12:00 run using today's date (Monday).
    */
-  @Scheduled(cron = "0 0 12 * * MON")
+  @Scheduled(cron = "${data-distributor.scheduler.signal-mon12-cron:0 0 12 * * MON}")
   public void runMondayNoon() {
     if (!enableMon12) {
       log.warn("LOG_004: Monday 12pm schedule disabled via config");
       return;
     }
-    LocalDate targetDate = LocalDate.now(); // Monday
+    LocalDate targetDate = LocalDate.now(clock); // Monday
     trigger("sched-mon-12", targetDate);
   }
 

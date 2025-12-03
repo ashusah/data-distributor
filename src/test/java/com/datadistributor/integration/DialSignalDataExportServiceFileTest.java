@@ -25,6 +25,7 @@ class DialSignalDataExportServiceFileTest {
     var props = new DataDistributorProperties();
     props.getStorage().setDialFolder(tempDir.resolve("dial").toString());
     props.getStorage().setDialFilePrefix("dial-prefix");
+    props.getStorage().setDialSchedulerEnabled(true);
 
     var events = List.of(sampleEvent(10L));
     var service = new DialSignalDataExportService(
