@@ -55,7 +55,7 @@ public class DialSignalDataExportService {
   }
 
   private String toCsv(List<SignalEvent> events) {
-    String header = "AccountNumber,IBAN,CustomerId,GRV,ProductId,CurrencyCode,SignalStartDate,SignalEndDate,SignalType,DebitAmount,BookDate";
+    String header = "EventId,AccountNumber,IBAN,CustomerId,GRV,ProductId,CurrencyCode,SignalStartDate,SignalEndDate,SignalType,DebitAmount,BookDate";
     String rows = events.stream()
         .map(this::toCsvRow)
         .collect(Collectors.joining("\n"));
@@ -69,6 +69,7 @@ public class DialSignalDataExportService {
         .orElse(null);
 
     return String.join(",",
+        safe(event.getUabsEventId()),
         safe(signal.getAgreementId()), // AccountNumber from signal
         safe(account == null ? null : account.getIban()),
         safe(account == null ? null : account.getBcNumber()), // treating bcNumber as CustomerId

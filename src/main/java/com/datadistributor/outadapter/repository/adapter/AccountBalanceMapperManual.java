@@ -25,8 +25,11 @@ public class AccountBalanceMapperManual implements AccountBalanceMapper {
     AccountBalance accountBalance = new AccountBalance();
     accountBalance.setAgreementId(entity.getAgreementId());
     accountBalance.setUnauthorizedDebitBalance(entity.getUnauthorizedDebitBalance());
-    accountBalance.setGrv(entity.getGrv());
-    accountBalance.setProductId(entity.getProductId());
+    if (entity.getGrv() != null) {
+      accountBalance.setGrv(entity.getGrv().getGrv());
+      accountBalance.setProductId(
+          entity.getGrv().getProductId() == null ? null : String.valueOf(entity.getGrv().getProductId()));
+    }
     accountBalance.setCurrencyCode(entity.getCurrencyCode());
     accountBalance.setIban(entity.getIban());
     accountBalance.setBcNumber(entity.getBcNumber());

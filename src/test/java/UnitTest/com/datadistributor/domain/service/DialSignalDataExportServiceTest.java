@@ -48,8 +48,9 @@ class DialSignalDataExportServiceTest {
 
     assertThat(storage.folder).isEqualTo("dial-folder");
     assertThat(storage.fileName).isEqualTo("dial-prefix-2025-12-02.csv");
-    assertThat(storage.content).contains("AccountNumber");
+    assertThat(storage.content).contains("EventId");
     assertThat(storage.content).contains("999");
+    assertThat(storage.content).contains("\n1,");
   }
 
   private static class CapturingStorage implements FileStoragePort {

@@ -5,6 +5,7 @@ import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
 import com.datadistributor.outadapter.entity.AccountBalanceJpaEntity;
 import com.datadistributor.outadapter.entity.SignalAuditJpaEntity;
 import com.datadistributor.outadapter.entity.SignalEventJpaEntity;
+import com.datadistributor.outadapter.entity.ProductRiskMonitoringJpaEntity;
 import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.CehResponseInitialEventRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
@@ -76,17 +77,24 @@ abstract class AbstractIntegrationTest {
 
   protected void saveAccount(long agreementId, long bcNumber) {
     AccountBalanceJpaEntity acct = new AccountBalanceJpaEntity();
+    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
+    prm.setGrv((short) 1);
+    prm.setProductId((short) 1);
+    prm.setCurrencyCode("EUR");
+    prm.setMonitorCW014Signal("Y");
+    prm.setMonitorKraandicht("Y");
+    prm.setReportCW014ToCEH("Y");
+    prm.setReportCW014ToDial("Y");
     acct.setAgreementId(agreementId);
-    acct.setGrv((short) 1);
+    acct.setGrv(prm);
     acct.setIban("DE1234567890123456");
-    acct.setLifeCycleStatus((byte) 1);
+    acct.setLifeCycleStatus((short) 1);
     acct.setBcNumber(bcNumber);
     acct.setCurrencyCode("EUR");
     acct.setBookDate(LocalDate.now().minusDays(5));
     acct.setUnauthorizedDebitBalance(500L);
     acct.setLastBookDateBalanceCrToDt(LocalDate.now().minusDays(5));
     acct.setIsAgreementPartOfAcbs("Y");
-    acct.setIsMarginAccountLinked("N");
     accountRepo.save(acct);
   }
 

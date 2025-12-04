@@ -15,8 +15,8 @@ public interface AccountBalanceMapper {
 
     @Mapping(target = "agreementId", source = "agreementId")
     @Mapping(target = "unauthorizedDebitBalance", source = "unauthorizedDebitBalance")
-    @Mapping(target = "grv", source = "grv")
-    @Mapping(target = "productId", source = "productId")
+    @Mapping(target = "grv", source = "grv.grv")
+    @Mapping(target = "productId", source = "grv.productId")
     @Mapping(target = "currencyCode", source = "currencyCode")
     @Mapping(target = "iban", source = "iban")
     @Mapping(target = "bcNumber", source = "bcNumber")

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
+import com.datadistributor.outadapter.entity.ProductRiskMonitoringJpaEntity;
 
 class EntityRoundTripTest {
 
@@ -78,31 +79,36 @@ class EntityRoundTripTest {
   @Test
   void accountBalanceJpaEntity_gettersAndSetters() {
     AccountBalanceJpaEntity entity = new AccountBalanceJpaEntity();
+    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
+    prm.setGrv((short) 2);
+    prm.setProductId((short) 7);
+    prm.setCurrencyCode("EUR");
+    prm.setMonitorCW014Signal("Y");
+    prm.setMonitorKraandicht("Y");
+    prm.setReportCW014ToCEH("Y");
+    prm.setReportCW014ToDial("Y");
     entity.setAgreementId(1L);
-    entity.setGrv((short) 2);
+    entity.setGrv(prm);
     entity.setIban("iban");
-    entity.setLifeCycleStatus((byte) 1);
+    entity.setLifeCycleStatus((short) 1);
     entity.setBcNumber(3L);
     entity.setCurrencyCode("EUR");
     entity.setBookDate(LocalDate.of(2024, 1, 1));
     entity.setUnauthorizedDebitBalance(4L);
     entity.setLastBookDateBalanceCrToDt(LocalDate.of(2023, 12, 31));
     entity.setIsAgreementPartOfAcbs("Y");
-    entity.setIsMarginAccountLinked("N");
-    entity.setProductId("P1");
 
     assertThat(entity.getAgreementId()).isEqualTo(1L);
-    assertThat(entity.getGrv()).isEqualTo((short) 2);
+    assertThat(entity.getGrv().getGrv()).isEqualTo((short) 2);
+    assertThat(entity.getGrv().getProductId()).isEqualTo((short) 7);
     assertThat(entity.getIban()).isEqualTo("iban");
-    assertThat(entity.getLifeCycleStatus()).isEqualTo((byte) 1);
+    assertThat(entity.getLifeCycleStatus()).isEqualTo((short) 1);
     assertThat(entity.getBcNumber()).isEqualTo(3L);
     assertThat(entity.getCurrencyCode()).isEqualTo("EUR");
     assertThat(entity.getBookDate()).isEqualTo(LocalDate.of(2024, 1, 1));
     assertThat(entity.getUnauthorizedDebitBalance()).isEqualTo(4L);
     assertThat(entity.getLastBookDateBalanceCrToDt()).isEqualTo(LocalDate.of(2023, 12, 31));
     assertThat(entity.getIsAgreementPartOfAcbs()).isEqualTo("Y");
-    assertThat(entity.getIsMarginAccountLinked()).isEqualTo("N");
-    assertThat(entity.getProductId()).isEqualTo("P1");
   }
 
   @Test
