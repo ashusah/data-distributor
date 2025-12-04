@@ -12,6 +12,9 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * JPA entity mapped to signal_events representing individual status updates for a signal.
+ */
 @Entity
 @Table(name = "signal_events")
 @Getter

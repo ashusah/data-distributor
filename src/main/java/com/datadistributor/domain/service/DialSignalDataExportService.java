@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
+/**
+ * Builds and uploads the DIAL signal data export as CSV using domain ports for data enrichment.
+ */
 @Service
 public class DialSignalDataExportService {
 

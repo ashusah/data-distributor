@@ -4,6 +4,9 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+/**
+ * Blocking Feign client used when the application is configured for synchronous dispatch.
+ */
 @FeignClient(
     name = "signalEventClient",
     url = "${data-distributor.external-api.base-url}"

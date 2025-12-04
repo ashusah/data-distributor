@@ -10,6 +10,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * Audit trail entity capturing each attempt to deliver a signal event to the downstream system.
+ */
 @Entity
 @Table(name = "signal_audit")
 @Data

@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Maps signal event JPA entities into the domain model, keeping the persistence schema isolated
+ * from the rest of the application.
+ */
 @Component
 public class SignalEventMapper {
 

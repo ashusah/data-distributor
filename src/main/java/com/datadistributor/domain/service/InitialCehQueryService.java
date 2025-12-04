@@ -5,6 +5,9 @@ import com.datadistributor.domain.outport.InitialCehMappingPort;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Domain service that retrieves previously stored CEH initial event ids for a signal.
+ */
 @RequiredArgsConstructor
 public class InitialCehQueryService implements InitialCehQueryUseCase {
 

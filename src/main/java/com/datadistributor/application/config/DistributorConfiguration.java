@@ -34,6 +34,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
+/**
+ * Wires domain services, ports, and adapters together while keeping configuration in one place.
+ * This is the primary assembly root for the hexagonal architecture.
+ */
 @Configuration
 @EnableConfigurationProperties(DataDistributorProperties.class)
 public class DistributorConfiguration {

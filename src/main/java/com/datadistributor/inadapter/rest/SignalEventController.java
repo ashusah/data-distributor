@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+/**
+ * REST endpoint to trigger signal event processing asynchronously and query job status.
+ */
 @RestController
 @RequestMapping("/api/signal-events")
 @Slf4j

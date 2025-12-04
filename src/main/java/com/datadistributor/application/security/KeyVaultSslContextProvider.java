@@ -16,6 +16,9 @@ import javax.net.ssl.TrustManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+/**
+ * Loads a Netty {@link SslContext} from Azure Key Vault certificates, caching the result for reuse.
+ */
 @Component
 @Slf4j
 public class KeyVaultSslContextProvider implements SslContextProvider {

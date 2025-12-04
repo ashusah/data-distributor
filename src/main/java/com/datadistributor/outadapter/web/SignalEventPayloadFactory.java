@@ -7,6 +7,9 @@ import com.datadistributor.domain.inport.InitialCehQueryUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/**
+ * Produces payloads enriched with customer and initial CEH ids for outbound dispatch.
+ */
 @Component
 @RequiredArgsConstructor
 public class SignalEventPayloadFactory {

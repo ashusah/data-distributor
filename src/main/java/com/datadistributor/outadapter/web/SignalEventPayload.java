@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+/**
+ * Payload sent to CEH describing a single signal event.
+ */
 @Data
 @AllArgsConstructor
 public class SignalEventPayload {

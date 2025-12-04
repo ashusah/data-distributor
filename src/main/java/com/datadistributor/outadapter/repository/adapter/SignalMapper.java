@@ -4,6 +4,10 @@ import com.datadistributor.domain.Signal;
 import com.datadistributor.outadapter.entity.SignalJpaEntity;
 import org.springframework.stereotype.Component;
 
+/**
+ * Converts signal JPA entities into the domain model so adapters can return rich domain objects
+ * without leaking persistence concerns.
+ */
 @Component
 public class SignalMapper {
 

@@ -7,6 +7,9 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import lombok.Data;
 
+/**
+ * Database representation of the account balance overview used to enrich exported signal data.
+ */
 @Entity
 @Table(name = "account_balance_overview")
 @Data

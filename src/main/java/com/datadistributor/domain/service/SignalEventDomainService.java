@@ -7,6 +7,10 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Domain facade around the signal event repository that enforces paging limits and delegates
+ * queries used by downstream batch processing.
+ */
 public class SignalEventDomainService implements SignalEventUseCase {
 
     private final SignalEventRepository signalEventRepository;

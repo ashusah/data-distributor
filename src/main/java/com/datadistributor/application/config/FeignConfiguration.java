@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
+/**
+ * Centralizes Feign setup (timeouts, logging, retry strategy) for blocking dispatch mode.
+ */
 @Configuration
 @EnableFeignClients(basePackages = "com.datadistributor.outadapter.web")
 public class FeignConfiguration {

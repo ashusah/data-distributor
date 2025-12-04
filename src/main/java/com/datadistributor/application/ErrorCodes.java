@@ -1,5 +1,8 @@
 package com.datadistributor.application;
 
+/**
+ * Central place for operational error codes that surface in logs and alerts.
+ */
 public final class ErrorCodes {
   private ErrorCodes() {}
 

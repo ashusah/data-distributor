@@ -7,6 +7,10 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Adapter that exposes account balance overview lookups to the domain layer while delegating
+ * persistence to Spring Data JPA. Keeps the domain insulated from JPA-specific concerns.
+ */
 @Repository
 @RequiredArgsConstructor
 public class AccountBalanceOverviewRepositoryAdapter implements AccountBalanceOverviewPort {

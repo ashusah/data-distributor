@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Embedded id mapping a CEH initial event identifier to a signal id.
+ */
 @Embeddable
 @Data
 @NoArgsConstructor

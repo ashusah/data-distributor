@@ -4,6 +4,9 @@ import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
 import org.springframework.stereotype.Component;
 
+/**
+ * Builds the outbound HTTP request (URI + payload) for a given signal event.
+ */
 @Component
 public class SignalEventRequestFactory {
 

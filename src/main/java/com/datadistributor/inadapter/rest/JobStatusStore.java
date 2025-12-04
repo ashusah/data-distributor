@@ -6,6 +6,9 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Component;
 
+/**
+ * In-memory store used to expose async job status over HTTP.
+ */
 @Component
 public class JobStatusStore {
 

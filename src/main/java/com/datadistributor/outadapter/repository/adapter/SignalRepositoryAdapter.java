@@ -8,6 +8,10 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Repository adapter that wraps Spring Data JPA access for signals and exposes them via the domain
+ * {@link SignalPort}. Ensures domain only sees mapped aggregates.
+ */
 @Repository
 @RequiredArgsConstructor
 public class SignalRepositoryAdapter implements SignalPort {

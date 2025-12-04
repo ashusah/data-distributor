@@ -11,6 +11,9 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
+/**
+ * Configures the shared reactive WebClient with timeouts and optional SSL context.
+ */
 @Configuration
 public class WebClientConfiguration {
 

@@ -6,6 +6,9 @@ import com.datadistributor.domain.outport.SignalPort;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Domain service delegating signal lookups to the configured port implementation.
+ */
 @RequiredArgsConstructor
 public class SignalQueryService implements SignalQueryUseCase {
 

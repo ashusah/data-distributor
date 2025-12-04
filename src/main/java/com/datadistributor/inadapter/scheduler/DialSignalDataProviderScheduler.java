@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * Triggers the DIAL signal data export on a configured schedule with an optional day offset.
+ */
 @Component
 @Slf4j
 public class DialSignalDataProviderScheduler {

@@ -10,6 +10,9 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+/**
+ * Defines the shared async executors used by schedulers and outbound calls.
+ */
 @Configuration
 @EnableAsync
 public class AsyncConfiguration {

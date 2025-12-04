@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
+/**
+ * Persists the initial CEH event id for a signal when the first OVERLIMIT event is delivered.
+ */
 public class InitialCehMappingService implements InitialCehMappingUseCase {
 
   private static final String OVERLIMIT_STATUS = "OVERLIMIT_SIGNAL";

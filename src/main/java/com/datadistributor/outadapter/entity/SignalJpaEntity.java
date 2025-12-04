@@ -7,6 +7,9 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import lombok.Data;
 
+/**
+ * JPA entity representing the core signal lifecycle record.
+ */
 @Entity
 @Table(name = "signal")
 @Data

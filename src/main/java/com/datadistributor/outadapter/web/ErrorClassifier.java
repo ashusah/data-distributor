@@ -6,6 +6,10 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.netty.http.client.PrematureCloseException;
 
+/**
+ * Normalizes different client exceptions into a small set of failure categories used by retry
+ * logic and audit logging.
+ */
 @Component
 public class ErrorClassifier {
 

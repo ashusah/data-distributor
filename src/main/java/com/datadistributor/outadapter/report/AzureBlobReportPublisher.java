@@ -9,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 @Slf4j
+/**
+ * Publishes delivery reports to Azure Blob Storage using the configured storage client and folder.
+ */
 public class AzureBlobReportPublisher implements DeliveryReportPublisher {
 
   private final FileStoragePort storageClient;

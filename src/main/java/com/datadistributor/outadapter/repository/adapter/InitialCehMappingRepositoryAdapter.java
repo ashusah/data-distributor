@@ -8,6 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
+/**
+ * Adapter that persists and fetches CEH initial event mappings on behalf of the domain while
+ * shielding core logic from JPA specifics.
+ */
 @Repository
 @RequiredArgsConstructor
 public class InitialCehMappingRepositoryAdapter implements InitialCehMappingPort {

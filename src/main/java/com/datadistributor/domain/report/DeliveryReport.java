@@ -4,6 +4,9 @@ import java.time.LocalDate;
 import lombok.Builder;
 import lombok.Value;
 
+/**
+ * Domain representation of a delivery status report for a given processing date.
+ */
 @Value
 @Builder
 public class DeliveryReport {

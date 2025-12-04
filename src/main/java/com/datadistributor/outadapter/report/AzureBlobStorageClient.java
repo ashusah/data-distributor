@@ -11,6 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 @Slf4j
+/**
+ * Azure Blob Storage implementation of {@link FileStoragePort}. Handles container creation,
+ * path resolution, and skips uploads when storage is disabled via configuration.
+ */
 public class AzureBlobStorageClient implements FileStoragePort {
 
   private final DataDistributorProperties.Storage storage;
