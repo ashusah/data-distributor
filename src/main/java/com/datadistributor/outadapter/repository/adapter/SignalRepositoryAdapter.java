@@ -4,6 +4,7 @@ import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.outport.SignalPort;
 import com.datadistributor.outadapter.entity.SignalJpaEntity;
 import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
+import java.time.LocalDate;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 @RequiredArgsConstructor
 public class SignalRepositoryAdapter implements SignalPort {
+
+  private static final LocalDate OPEN_END_DATE = LocalDate.of(9999, 12, 31);
 
   private final SignalJpaRepository repository;
   private final SignalMapper mapper;
@@ -29,7 +32,7 @@ public class SignalRepositoryAdapter implements SignalPort {
   @Override
   public Optional<Signal> getOpenSignalOfAgreement(Long agreementId) {
     if (agreementId == null) return Optional.empty();
-    return repository.findOpenByAgreementId(agreementId, java.time.LocalDate.of(9999, 12, 31))
+    return repository.findByAgreementIdAndSignalEndDate(agreementId, OPEN_END_DATE)
         .map(mapper::toDomain);
   }
 

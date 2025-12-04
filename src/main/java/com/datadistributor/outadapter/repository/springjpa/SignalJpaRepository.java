@@ -20,5 +20,9 @@ public interface SignalJpaRepository extends JpaRepository<SignalJpaEntity, Long
       """)
   Optional<SignalJpaEntity> findOpenByAgreementId(@Param("agreementId") Long agreementId,
                                                   @Param("openEndDate") java.time.LocalDate openEndDate);
+
+  Optional<SignalJpaEntity> findByAgreementIdAndSignalEndDate(Long agreementId,
+                                                              java.time.LocalDate signalEndDate);
+
   java.util.List<SignalJpaEntity> findBySignalStartDateLessThanEqual(java.time.LocalDate date);
 }

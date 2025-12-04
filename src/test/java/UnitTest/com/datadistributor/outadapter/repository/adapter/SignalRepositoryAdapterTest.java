@@ -50,7 +50,8 @@ class SignalRepositoryAdapterTest {
   void getOpenSignalOfAgreement_mapsEntity() {
     SignalJpaEntity entity = new SignalJpaEntity();
     entity.setSignalId(5L);
-    when(repository.findOpenByAgreementId(2L, LocalDate.of(9999, 12, 31))).thenReturn(Optional.of(entity));
+    when(repository.findByAgreementIdAndSignalEndDate(2L, LocalDate.of(9999, 12, 31)))
+        .thenReturn(Optional.of(entity));
 
     assertThat(adapter.getOpenSignalOfAgreement(2L)).get().extracting("signalId").isEqualTo(5L);
   }
