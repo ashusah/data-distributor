@@ -16,5 +16,5 @@ public interface AccountBalanceUseCase {
   /**
    * @return full account balance view for the given agreement id.
    */
-  AccountBalance getAccountBalanceByAgreementId(Long agreementId);
+  AccountBalance getAccountBalanceOfAgreement(Long agreementId);
 }

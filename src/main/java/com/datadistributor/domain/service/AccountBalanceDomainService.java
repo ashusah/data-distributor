@@ -23,7 +23,7 @@ public class AccountBalanceDomainService implements AccountBalanceUseCase {
   }
 
   @Override
-  public AccountBalance getAccountBalanceByAgreementId(Long agreementId) {
+  public AccountBalance getAccountBalanceOfAgreement(Long agreementId) {
     if (agreementId == null) {
       return null;
     }
