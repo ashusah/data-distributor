@@ -75,7 +75,7 @@ class SignalDispatchSelectorTest {
 
     List<SignalEvent> toSend = selector.selectEventsToSend(LocalDate.of(2025, 12, 4));
 
-    assertThat(toSend).isEmpty();
+    assertThat(toSend).extracting(SignalEvent::getUabsEventId).containsExactly(todays.getUabsEventId());
   }
 
   @Test
@@ -158,7 +158,7 @@ class SignalDispatchSelectorTest {
         .filter(e -> s6 == e.getSignalId())
         .toList()).isEmpty();
 
-    // Scenario 7: breach on DPD2 sends initial (DPD1) but DPD3 is below threshold and dpd<5 => no send on DPD3
+    // Scenario 7: breach on DPD2 sends initial (DPD1); DPD3 below threshold but sent because initial already sent
     long s7 = 107L;
     signals.save(signal(s7, start, null));
     SignalEvent s7Initial = repo.save(event(7001L, s7, start.atTime(8, 0), "OVERLIMIT_SIGNAL", 10L));
@@ -167,7 +167,8 @@ class SignalDispatchSelectorTest {
     audit.markSuccess(s7Initial.getUabsEventId());
     assertThat(selector.selectEventsToSend(start.plusDays(2)).stream()
         .filter(e -> s7 == e.getSignalId())
-        .toList()).isEmpty();
+        .map(SignalEvent::getUabsEventId)
+        .toList()).containsExactly(7003L);
 
     // Scenario 8: never breaches, closes on DPD6 with OUT_OF_OVERLIMIT -> nothing to send any day
     long s8 = 108L;
@@ -202,6 +203,31 @@ class SignalDispatchSelectorTest {
   void conversationMatrixScenarios() {
     LocalDate start = LocalDate.of(2025, 1, 1);
 
+    // Explicit guardrail scenario: once the initial OVERLIMIT is sent (threshold >= 250),
+    // every subsequent financial update is sent even if its balance drops below the threshold.
+    InMemoryEventRepo followUpRepo = new InMemoryEventRepo();
+    InMemorySignalPort followUpSignalPort = new InMemorySignalPort();
+    InMemoryAuditPort followUpAudit = new InMemoryAuditPort();
+    InMemoryInitialCehPort followUpCeh = new InMemoryInitialCehPort();
+    SignalDispatchSelector followUpSelector =
+        new SignalDispatchSelector(followUpRepo, followUpSignalPort, followUpAudit, followUpCeh, 250, 5, 1);
+
+    long followUpSignalId = 42L;
+    followUpSignalPort.save(signal(followUpSignalId, start, null));
+    followUpRepo.save(event(1L, followUpSignalId, start.atTime(8, 0), "OVERLIMIT_SIGNAL", 10L));         // DPD1
+    followUpRepo.save(event(2L, followUpSignalId, start.plusDays(1).atTime(8, 0), "FINANCIAL_UPDATE", 250L)); // DPD2 (threshold hit)
+    followUpRepo.save(event(3L, followUpSignalId, start.plusDays(2).atTime(8, 0), "FINANCIAL_UPDATE", 20L));  // DPD3 (below threshold)
+
+    assertThat(followUpSelector.selectEventsToSend(start.plusDays(0))).isEmpty();
+    List<Long> dpd2 = followUpSelector.selectEventsToSend(start.plusDays(1)).stream()
+        .map(SignalEvent::getUabsEventId).toList();
+    assertThat(dpd2).containsExactly(1L); // initial OVERLIMIT sent when 250 reached
+    dpd2.forEach(followUpAudit::markSuccess);
+
+    List<Long> dpd3 = followUpSelector.selectEventsToSend(start.plusDays(2)).stream()
+        .map(SignalEvent::getUabsEventId).toList();
+    assertThat(dpd3).containsExactly(3L); // follow-up FU sent even though balance < threshold
+
     Scenario[] scenarios = new Scenario[]{
         // A: Breach DPD2, later breach, closure DPD5
         new Scenario("breach_then_breach_then_close",
@@ -215,6 +241,7 @@ class SignalDispatchSelectorTest {
             Map.of(
                 2, List.of(1L),
                 3, List.of(3L),
+                4, List.of(4L),
                 5, List.of(5L)
             )
         ),
@@ -264,7 +291,7 @@ class SignalDispatchSelectorTest {
                 3, List.of(3L)
             )
         ),
-        // F: Breach DPD2, below threshold DPD3, closure DPD4
+        // F: Breach DPD2, below threshold DPD3, closure DPD4 (now sends DPD3 FU too)
         new Scenario("breach_then_close_dp4",
             List.of(
                 new DayEvent(1, "OVERLIMIT_SIGNAL", 10L),
@@ -274,10 +301,11 @@ class SignalDispatchSelectorTest {
             ),
             Map.of(
                 2, List.of(1L),
+                3, List.of(3L),
                 4, List.of(4L)
             )
         ),
-        // G: Breach DPD2, below threshold afterwards, no more events -> no extra sends
+        // G: Breach DPD2, below threshold afterwards -> sends follow-up FU
         new Scenario("breach_then_quiet",
             List.of(
                 new DayEvent(1, "OVERLIMIT_SIGNAL", 10L),
@@ -285,10 +313,11 @@ class SignalDispatchSelectorTest {
                 new DayEvent(3, "FINANCIAL_UPDATE", 40L)
             ),
             Map.of(
-                2, List.of(1L)
+                2, List.of(1L),
+                3, List.of(3L)
             )
         ),
-        // H: Trigger on DPD4 (250), then DPD6 FU 249 but open-too-long sends today's
+        // H: Trigger on DPD4 (250), then DPD5/6 FU < threshold still sent after initial
         new Scenario("late_trigger_and_open_too_long_followup",
             List.of(
                 new DayEvent(1, "OVERLIMIT_SIGNAL", 10L),
@@ -300,6 +329,7 @@ class SignalDispatchSelectorTest {
             ),
             Map.of(
                 4, List.of(1L),
+                5, List.of(5L),
                 6, List.of(6L)
             )
         )

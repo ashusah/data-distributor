@@ -162,12 +162,8 @@ public class SignalDispatchSelector implements SignalDispatchSelectorUseCase {
   }
 
   private boolean shouldSendFollowUp(SignalEvent todaysEvent, boolean openTooLong, boolean closed) {
-    if (todaysEvent == null) {
-      return false;
-    }
-    boolean balanceTrigger = exceedsBalanceThreshold(todaysEvent);
-    boolean closure = isClosureEvent(todaysEvent);
-    return balanceTrigger || openTooLong || closed || closure;
+    // Once the initial OVERLIMIT has been sent, forward every subsequent event for that signal.
+    return todaysEvent != null;
   }
 
   private void evaluateOverdueWithoutTodayEvents(Signal signal,
