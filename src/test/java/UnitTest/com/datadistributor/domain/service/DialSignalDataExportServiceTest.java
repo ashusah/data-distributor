@@ -41,6 +41,7 @@ class DialSignalDataExportServiceTest {
     SignalEvent e1 = new SignalEvent();
     e1.setUabsEventId(1L);
     e1.setSignalId(11L);
+    e1.setAgreementId(210L);
     events.add(e1);
 
     service.export(LocalDate.of(2025, 12, 2));
@@ -88,8 +89,16 @@ class DialSignalDataExportServiceTest {
     }
 
     @Override
-    public java.util.Optional<Signal> findByAgreementId(Long agreementId) {
-      return java.util.Optional.empty();
+    public java.util.Optional<Signal> getOpenSignalOfAgreement(Long agreementId) {
+      if (agreementId == null) {
+        return java.util.Optional.empty();
+      }
+      Signal s = new Signal();
+      s.setSignalId(agreementId + 1);
+      s.setAgreementId(999L);
+      s.setSignalStartDate(LocalDate.of(2025, 12, 1));
+      s.setSignalEndDate(LocalDate.of(2025, 12, 3));
+      return java.util.Optional.of(s);
     }
   }
 

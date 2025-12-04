@@ -93,8 +93,13 @@ class DialSignalDataExportServiceFileTest {
     }
 
     @Override
-    public java.util.Optional<Signal> findByAgreementId(Long agreementId) {
-      return java.util.Optional.empty();
+    public java.util.Optional<Signal> getOpenSignalOfAgreement(Long agreementId) {
+      Signal s = new Signal();
+      s.setSignalId(agreementId + 1);
+      s.setAgreementId(999L);
+      s.setSignalStartDate(LocalDate.of(2025, 12, 1));
+      s.setSignalEndDate(LocalDate.of(2025, 12, 3));
+      return java.util.Optional.of(s);
     }
   }
 

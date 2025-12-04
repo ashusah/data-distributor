@@ -8,6 +8,6 @@ import java.util.Optional;
  */
 public interface SignalPort {
   Optional<Signal> findBySignalId(Long signalId);
-  Optional<Signal> findByAgreementId(Long agreementId);
+  Optional<Signal> getOpenSignalOfAgreement(Long agreementId);
   java.util.List<Signal> findByStartDateBefore(java.time.LocalDate date);
 }

@@ -36,10 +36,10 @@ class SignalQueryServiceTest {
   }
 
   @Test
-  void findByAgreementId_delegates() {
+  void getOpenSignalOfAgreement_delegates() {
     Signal signal = new Signal();
-    when(port.findByAgreementId(6L)).thenReturn(Optional.of(signal));
+    when(port.getOpenSignalOfAgreement(6L)).thenReturn(Optional.of(signal));
 
-    assertThat(service.findByAgreementId(6L)).contains(signal);
+    assertThat(service.getOpenSignalOfAgreement(6L)).contains(signal);
   }
 }

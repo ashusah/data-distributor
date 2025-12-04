@@ -68,7 +68,7 @@ class DialSignalDataProviderSchedulerTest {
         }
 
         @Override
-        public java.util.Optional<Signal> findByAgreementId(Long agreementId) {
+        public java.util.Optional<Signal> getOpenSignalOfAgreement(Long agreementId) {
           return java.util.Optional.empty();
         }
       };

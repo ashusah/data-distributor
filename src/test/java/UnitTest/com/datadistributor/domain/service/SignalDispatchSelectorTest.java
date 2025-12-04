@@ -456,7 +456,7 @@ class SignalDispatchSelectorTest {
     private final Map<Long, Signal> map = new HashMap<>();
     void save(Signal s) { map.put(s.getSignalId(), s); }
     @Override public Optional<Signal> findBySignalId(Long signalId) { return Optional.ofNullable(map.get(signalId)); }
-    @Override public Optional<Signal> findByAgreementId(Long agreementId) { return map.values().stream().filter(s -> agreementId.equals(s.getAgreementId())).findFirst(); }
+    @Override public Optional<Signal> getOpenSignalOfAgreement(Long agreementId) { return map.values().stream().filter(s -> agreementId.equals(s.getAgreementId())).findFirst(); }
     @Override public List<Signal> findByStartDateBefore(LocalDate date) {
       if (date == null) return List.of();
       return map.values().stream()

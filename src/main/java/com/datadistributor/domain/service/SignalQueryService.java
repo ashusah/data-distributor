@@ -20,7 +20,7 @@ public class SignalQueryService implements SignalUseCase {
   }
 
   @Override
-  public Optional<Signal> findByAgreementId(Long agreementId) {
-    return port.findByAgreementId(agreementId);
+  public Optional<Signal> getOpenSignalOfAgreement(Long agreementId) {
+    return port.getOpenSignalOfAgreement(agreementId);
   }
 }

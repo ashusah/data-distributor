@@ -42,17 +42,17 @@ class SignalRepositoryAdapterTest {
   }
 
   @Test
-  void findByAgreementId_returnsEmptyForNull() {
-    assertThat(adapter.findByAgreementId(null)).isEmpty();
+  void getOpenSignalOfAgreement_returnsEmptyForNull() {
+    assertThat(adapter.getOpenSignalOfAgreement(null)).isEmpty();
   }
 
   @Test
-  void findByAgreementId_mapsEntity() {
+  void getOpenSignalOfAgreement_mapsEntity() {
     SignalJpaEntity entity = new SignalJpaEntity();
     entity.setSignalId(5L);
-    when(repository.findByAgreementId(2L)).thenReturn(Optional.of(entity));
+    when(repository.findOpenByAgreementId(2L, LocalDate.of(9999, 12, 31))).thenReturn(Optional.of(entity));
 
-    assertThat(adapter.findByAgreementId(2L)).get().extracting("signalId").isEqualTo(5L);
+    assertThat(adapter.getOpenSignalOfAgreement(2L)).get().extracting("signalId").isEqualTo(5L);
   }
 
   @Test

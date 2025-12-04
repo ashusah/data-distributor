@@ -3,6 +3,8 @@ package com.datadistributor.outadapter.repository.springjpa;
 import com.datadistributor.outadapter.entity.SignalJpaEntity;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -10,6 +12,13 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface SignalJpaRepository extends JpaRepository<SignalJpaEntity, Long> {
-  Optional<SignalJpaEntity> findByAgreementId(Long agreementId);
+  @Query("""
+      select s from SignalJpaEntity s
+      where s.agreementId = :agreementId
+        and (s.signalEndDate is null or s.signalEndDate = :openEndDate)
+      order by s.signalStartDate desc
+      """)
+  Optional<SignalJpaEntity> findOpenByAgreementId(@Param("agreementId") Long agreementId,
+                                                  @Param("openEndDate") java.time.LocalDate openEndDate);
   java.util.List<SignalJpaEntity> findBySignalStartDateLessThanEqual(java.time.LocalDate date);
 }

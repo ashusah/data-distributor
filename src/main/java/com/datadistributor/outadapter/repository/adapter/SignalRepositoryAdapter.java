@@ -27,9 +27,10 @@ public class SignalRepositoryAdapter implements SignalPort {
   }
 
   @Override
-  public Optional<Signal> findByAgreementId(Long agreementId) {
+  public Optional<Signal> getOpenSignalOfAgreement(Long agreementId) {
     if (agreementId == null) return Optional.empty();
-    return repository.findByAgreementId(agreementId).map(mapper::toDomain);
+    return repository.findOpenByAgreementId(agreementId, java.time.LocalDate.of(9999, 12, 31))
+        .map(mapper::toDomain);
   }
 
   @Override
