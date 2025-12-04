@@ -7,7 +7,7 @@ import com.datadistributor.domain.job.JobProgressTracker;
 import com.datadistributor.domain.job.JobResult;
 import com.datadistributor.domain.outport.DeliveryReportPublisher;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.report.DeliveryReport;
 import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SignalEventProcessingService implements SignalEventProcessingUseCase {
 
-  private final SignalEventRepository signalEventRepository;
+  private final SignalEventPort signalEventRepository;
   private final SignalEventBatchPort signalEventBatchPort;
   private final SignalAuditQueryPort signalAuditQueryPort;
   private final SignalDispatchSelectorUseCase signalDispatchSelector;
@@ -42,7 +42,7 @@ public class SignalEventProcessingService implements SignalEventProcessingUseCas
   private final JobProgressTracker jobProgressTracker;
   private final DeliveryReportPublisher deliveryReportPublisher;
 
-  public SignalEventProcessingService(SignalEventRepository signalEventRepository,
+  public SignalEventProcessingService(SignalEventPort signalEventRepository,
                                       SignalEventBatchPort signalEventBatchPort,
                                       SignalAuditQueryPort signalAuditQueryPort,
                                       SignalDispatchSelectorUseCase signalDispatchSelector,

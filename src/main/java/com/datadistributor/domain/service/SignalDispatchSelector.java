@@ -5,7 +5,7 @@ import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
 import com.datadistributor.domain.outport.InitialCehMappingPort;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.outport.SignalPort;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -36,7 +36,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SignalDispatchSelector implements SignalDispatchSelectorUseCase {
 
-  private final SignalEventRepository signalEventRepository;
+  private final SignalEventPort signalEventRepository;
   private final SignalPort signalPort;
   private final SignalAuditQueryPort auditQueryPort;
   private final InitialCehMappingPort initialCehMappingPort;

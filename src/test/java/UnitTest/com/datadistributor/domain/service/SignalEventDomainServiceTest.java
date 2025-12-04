@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.datadistributor.domain.SignalEvent;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +20,7 @@ import org.mockito.MockitoAnnotations;
 class SignalEventDomainServiceTest {
 
   @Mock
-  private SignalEventRepository repository;
+  private SignalEventPort repository;
 
   private SignalEventDomainService service;
 

@@ -2,7 +2,7 @@ package com.datadistributor.domain.service;
 
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.SignalEventUseCase;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,10 +13,10 @@ import java.util.List;
  */
 public class SignalEventDomainService implements SignalEventUseCase {
 
-    private final SignalEventRepository signalEventRepository;
+    private final SignalEventPort signalEventRepository;
     private final int pageSize;
 
-    public SignalEventDomainService(SignalEventRepository signalEventRepository, int pageSize) {
+    public SignalEventDomainService(SignalEventPort signalEventRepository, int pageSize) {
         this.signalEventRepository = signalEventRepository;
         this.pageSize = Math.max(1, pageSize);
     }

@@ -2,7 +2,7 @@ package com.datadistributor.outadapter.repository.adapter;
 
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.outadapter.entity.SignalEventJpaEntity;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
 import java.time.LocalDate;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Repository;
  * book-date lookback) used in the CEH flow.
  */
 @Repository
-public class SignalEventRepositoryAdapter implements SignalEventRepository {
+public class SignalEventRepositoryAdapter implements SignalEventPort {
 
     private final long minUnauthorizedDebitBalance;
     private final int bookDateLookbackDays;

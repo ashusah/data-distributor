@@ -9,7 +9,7 @@ import com.datadistributor.domain.job.JobResult;
 import com.datadistributor.domain.outport.DeliveryReportPublisher;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
 import com.datadistributor.domain.service.SignalEventProcessingService;
 import java.nio.file.Files;
@@ -69,7 +69,7 @@ class SignalEventDeliveryReportFileTest {
     return e;
   }
 
-  private static class StubSignalEventRepository implements SignalEventRepository {
+  private static class StubSignalEventRepository implements SignalEventPort {
     private final List<SignalEvent> events;
     private final long totalCount;
 
@@ -141,8 +141,8 @@ class SignalEventDeliveryReportFileTest {
   }
 
   private static class StubDispatchSelector implements SignalDispatchSelectorUseCase {
-    private final SignalEventRepository repo;
-    StubDispatchSelector(SignalEventRepository repo) { this.repo = repo; }
+    private final SignalEventPort repo;
+    StubDispatchSelector(SignalEventPort repo) { this.repo = repo; }
     @Override
     public List<SignalEvent> selectEventsToSend(LocalDate targetDate) {
       return repo.getSignalEventsForCEH(targetDate, 0, 100);

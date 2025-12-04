@@ -4,7 +4,7 @@ import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.SignalEventRetryUseCase;
 import com.datadistributor.domain.job.JobResult;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.outport.SignalEventSenderPort;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,11 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 public class SignalEventRetryService implements SignalEventRetryUseCase {
 
   private final SignalAuditQueryPort signalAuditQueryPort;
-  private final SignalEventRepository signalEventRepository;
+  private final SignalEventPort signalEventRepository;
   private final SignalEventSenderPort senderPort;
 
   public SignalEventRetryService(SignalAuditQueryPort signalAuditQueryPort,
-                                 SignalEventRepository signalEventRepository,
+                                 SignalEventPort signalEventRepository,
                                  SignalEventSenderPort senderPort) {
     this.signalAuditQueryPort = signalAuditQueryPort;
     this.signalEventRepository = signalEventRepository;

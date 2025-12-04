@@ -14,7 +14,7 @@ import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import com.datadistributor.domain.outport.InitialCehMappingPort;
 import com.datadistributor.domain.outport.FileStoragePort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.outport.SignalEventSenderPort;
 import com.datadistributor.domain.outport.SignalPort;
 import com.datadistributor.domain.service.AccountBalanceService;
@@ -43,7 +43,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 public class DistributorConfiguration {
 
     @Bean
-    SignalEventUseCase getSignalEventUseCase(SignalEventRepository signalEventRepository,
+    SignalEventUseCase getSignalEventUseCase(SignalEventPort signalEventRepository,
                                             DataDistributorProperties properties) {
         return new SignalEventDomainService(signalEventRepository, properties.getProcessing().getPageSize());
     }
@@ -55,7 +55,7 @@ public class DistributorConfiguration {
 
     @Bean
     SignalEventProcessingUseCase signalEventProcessingUseCase(
-        SignalEventRepository repository,
+        SignalEventPort repository,
         SignalEventBatchPort batchPort,
         SignalAuditQueryPort signalAuditQueryPort,
         SignalDispatchSelectorUseCase signalDispatchSelectorUseCase,
@@ -75,7 +75,7 @@ public class DistributorConfiguration {
 
     @Bean
     SignalEventRetryUseCase signalEventRetryUseCase(SignalAuditQueryPort signalAuditQueryPort,
-                                                    SignalEventRepository signalEventRepository,
+                                                    SignalEventPort signalEventRepository,
                                                     SignalEventSenderPort signalEventSenderPort) {
         return new SignalEventRetryService(
             signalAuditQueryPort,
@@ -128,7 +128,7 @@ public class DistributorConfiguration {
     }
 
     @Bean
-    SignalDispatchSelectorUseCase signalDispatchSelectorUseCase(SignalEventRepository signalEventRepository,
+    SignalDispatchSelectorUseCase signalDispatchSelectorUseCase(SignalEventPort signalEventRepository,
                                                                 SignalPort signalPort,
                                                                 SignalAuditQueryPort signalAuditQueryPort,
                                                                 InitialCehMappingPort initialCehMappingPort,

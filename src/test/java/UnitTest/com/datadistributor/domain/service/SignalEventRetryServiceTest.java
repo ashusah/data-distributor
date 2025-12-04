@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.job.JobResult;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.outport.SignalEventSenderPort;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -95,7 +95,7 @@ class SignalEventRetryServiceTest {
     }
   }
 
-  private static class FakeEventRepository implements SignalEventRepository {
+  private static class FakeEventRepository implements SignalEventPort {
     private final Map<Long, SignalEvent> events = new HashMap<>();
 
     void save(SignalEvent event) {

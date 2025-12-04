@@ -6,7 +6,7 @@ import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.outport.InitialCehMappingPort;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
-import com.datadistributor.domain.outport.SignalEventRepository;
+import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.outport.SignalPort;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -399,7 +399,7 @@ class SignalDispatchSelectorTest {
     return e;
   }
 
-  private static class InMemoryEventRepo implements SignalEventRepository {
+  private static class InMemoryEventRepo implements SignalEventPort {
     private final List<SignalEvent> events = new ArrayList<>();
 
     SignalEvent save(SignalEvent e) {
