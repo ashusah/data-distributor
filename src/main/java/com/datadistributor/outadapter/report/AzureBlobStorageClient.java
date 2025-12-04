@@ -1,9 +1,5 @@
 package com.datadistributor.outadapter.report;
 
-import com.azure.core.util.BinaryData;
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.outport.FileStoragePort;
 import java.util.Optional;
@@ -18,11 +14,19 @@ import org.springframework.util.StringUtils;
 public class AzureBlobStorageClient implements FileStoragePort {
 
   private final DataDistributorProperties.Storage storage;
-  private final BlobServiceClient serviceClient;
+  private final BlobServiceClientAdapter serviceClient;
 
   public AzureBlobStorageClient(DataDistributorProperties properties) {
     this.storage = properties.getStorage();
     this.serviceClient = buildClient(storage);
+  }
+
+  /**
+   * Test-support constructor to inject a custom client adapter (e.g., a simple stub).
+   */
+  AzureBlobStorageClient(DataDistributorProperties properties, BlobServiceClientAdapter adapter) {
+    this.storage = properties.getStorage();
+    this.serviceClient = adapter;
   }
 
   @Override
@@ -32,13 +36,12 @@ public class AzureBlobStorageClient implements FileStoragePort {
       return;
     }
     try {
-      BlobContainerClient containerClient = serviceClient.getBlobContainerClient(storage.getContainer());
+      BlobContainerClientAdapter containerClient = serviceClient.getBlobContainerClient(storage.getContainer());
       if (!containerClient.exists()) {
         containerClient.create();
       }
       String blobPath = buildPath(folder, fileName);
-      containerClient.getBlobClient(blobPath)
-          .upload(BinaryData.fromString(content), true);
+      containerClient.getBlobClient(blobPath).upload(content);
       log.info("Uploaded blob {} to container {}", blobPath, storage.getContainer());
     } catch (Exception ex) {
       log.error("{}: Failed to upload blob {}: {}", com.datadistributor.application.ErrorCodes.FILE_UPLOAD_FAILED, fileName, ex.getMessage(), ex);
@@ -49,12 +52,10 @@ public class AzureBlobStorageClient implements FileStoragePort {
     return storage.isEnabled() && serviceClient != null;
   }
 
-  private BlobServiceClient buildClient(DataDistributorProperties.Storage storage) {
+  private BlobServiceClientAdapter buildClient(DataDistributorProperties.Storage storage) {
     if (!storage.isEnabled()) return null;
     if (!StringUtils.hasText(storage.getConnectionString())) return null;
-    return new BlobServiceClientBuilder()
-        .connectionString(storage.getConnectionString())
-        .buildClient();
+    return new DefaultBlobServiceClientAdapter(storage.getConnectionString());
   }
 
   private String buildPath(String folder, String fileName) {
@@ -63,5 +64,75 @@ public class AzureBlobStorageClient implements FileStoragePort {
       return fileName;
     }
     return sanitizedFolder.endsWith("/") ? sanitizedFolder + fileName : sanitizedFolder + "/" + fileName;
+  }
+
+  /**
+   * Narrow interface to keep Azure SDK types out of tests that do not need them.
+   */
+  interface BlobServiceClientAdapter {
+    BlobContainerClientAdapter getBlobContainerClient(String containerName);
+  }
+
+  interface BlobContainerClientAdapter {
+    boolean exists();
+
+    void create();
+
+    BlobClientAdapter getBlobClient(String path);
+  }
+
+  interface BlobClientAdapter {
+    void upload(String content);
+  }
+
+  static class DefaultBlobServiceClientAdapter implements BlobServiceClientAdapter {
+    private final com.azure.storage.blob.BlobServiceClient delegate;
+
+    DefaultBlobServiceClientAdapter(String connectionString) {
+      this.delegate = new com.azure.storage.blob.BlobServiceClientBuilder()
+          .connectionString(connectionString)
+          .buildClient();
+    }
+
+    @Override
+    public BlobContainerClientAdapter getBlobContainerClient(String containerName) {
+      return new AzureBlobContainerClientAdapter(delegate.getBlobContainerClient(containerName));
+    }
+  }
+
+  static class AzureBlobContainerClientAdapter implements BlobContainerClientAdapter {
+    private final com.azure.storage.blob.BlobContainerClient delegate;
+
+    AzureBlobContainerClientAdapter(com.azure.storage.blob.BlobContainerClient delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public boolean exists() {
+      return delegate.exists();
+    }
+
+    @Override
+    public void create() {
+      delegate.create();
+    }
+
+    @Override
+    public BlobClientAdapter getBlobClient(String path) {
+      return new AzureBlobClientAdapter(delegate.getBlobClient(path));
+    }
+  }
+
+  static class AzureBlobClientAdapter implements BlobClientAdapter {
+    private final com.azure.storage.blob.BlobClient delegate;
+
+    AzureBlobClientAdapter(com.azure.storage.blob.BlobClient delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public void upload(String content) {
+      delegate.upload(com.azure.core.util.BinaryData.fromString(content), true);
+    }
   }
 }
