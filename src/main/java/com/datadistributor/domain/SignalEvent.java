@@ -6,6 +6,11 @@ import lombok.EqualsAndHashCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Domain representation of a signal event stored in UABS and sent to CEH. It carries balance and
+ * status details (OVERLIMIT, FINANCIAL_UPDATE, OUT_OF_OVERLIMIT) plus timestamps used for DPD and
+ * prerequisite checks.
+ */
 @Data
 @EqualsAndHashCode
 public class SignalEvent {
@@ -20,4 +25,3 @@ public class SignalEvent {
     private Short grv;
     private Short productId;
 }
-

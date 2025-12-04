@@ -3,6 +3,9 @@ package com.datadistributor.domain;
 import java.time.LocalDate;
 import lombok.Data;
 
+/**
+ * Domain projection of account balance details enriched for DIAL exports and signal context.
+ */
 @Data
 public class AccountBalanceOverview {
   private Long agreementId;

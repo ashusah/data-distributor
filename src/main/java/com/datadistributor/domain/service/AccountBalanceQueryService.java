@@ -5,6 +5,9 @@ import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Domain service delegating account balance lookups to the underlying port.
+ */
 @RequiredArgsConstructor
 public class AccountBalanceQueryService implements AccountBalanceQueryUseCase {
 

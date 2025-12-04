@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Summary of a job run (batches aggregated): counts, timestamp, and free-form message.
+ */
 public class JobResult {
 
   private int successCount;

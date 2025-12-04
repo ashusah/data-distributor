@@ -1,5 +1,8 @@
 package com.datadistributor.domain.job;
 
+/**
+ * Immutable summary for a single batch submission (counts of success/failure).
+ */
 public record BatchResult(int successCount, int failureCount) {
 
   public static BatchResult empty() {

@@ -2,6 +2,9 @@ package com.datadistributor.domain.job;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
+/**
+ * Lightweight tracker for batch jobs. Logs batch completion and aggregates success/failure counts.
+ */
 @Slf4j
 public class JobProgressTracker {
 
@@ -35,6 +38,9 @@ public class JobProgressTracker {
     }
   }
 
+  /**
+   * Mutable progress snapshot used during a job run.
+   */
   public static final class JobProgress {
     private final String jobId;
     private final int totalBatches;
