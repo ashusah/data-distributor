@@ -2,6 +2,7 @@ package com.datadistributor.application.config;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -15,16 +16,20 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  */
 @Configuration
 @EnableAsync
+@RequiredArgsConstructor
 public class AsyncConfiguration {
+
+  private final DataDistributorProperties properties;
 
   @Bean(name = "dataDistributorTaskExecutor")
   @Primary
   public ThreadPoolTaskExecutor dataDistributorTaskExecutor() {
+    DataDistributorProperties.Async async = properties.getAsync();
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(20);
-    executor.setMaxPoolSize(50);
-    executor.setQueueCapacity(10_000);
-    executor.setThreadNamePrefix("DataDistributor-");
+    executor.setCorePoolSize(async.getCorePoolSize());
+    executor.setMaxPoolSize(async.getMaxPoolSize());
+    executor.setQueueCapacity(async.getQueueCapacity());
+    executor.setThreadNamePrefix(async.getThreadNamePrefix());
     executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
     executor.initialize();
     return executor;

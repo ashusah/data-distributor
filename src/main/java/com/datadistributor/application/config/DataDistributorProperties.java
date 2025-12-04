@@ -18,6 +18,7 @@ public class DataDistributorProperties {
   private Azure azure = new Azure();
   private Storage storage = new Storage();
   private Scheduler scheduler = new Scheduler();
+  private Async async = new Async();
 
   @Data
   public static class ExternalApi {
@@ -110,5 +111,16 @@ public class DataDistributorProperties {
      * Hourly from 13:00 to 23:00 every day except Monday.
      */
     private String retryCron = "0 0 13-23 * * TUE,WED,THU,FRI,SAT,SUN";
+  }
+
+  @Data
+  public static class Async {
+    @Min(1)
+    private int corePoolSize = 20;
+    @Min(1)
+    private int maxPoolSize = 50;
+    @Min(0)
+    private int queueCapacity = 10_000;
+    private String threadNamePrefix = "DataDistributor-";
   }
 }

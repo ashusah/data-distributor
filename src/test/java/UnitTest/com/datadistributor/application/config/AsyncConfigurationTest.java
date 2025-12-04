@@ -10,18 +10,31 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  */
 class AsyncConfigurationTest {
 
-  private final AsyncConfiguration config = new AsyncConfiguration();
+  private final DataDistributorProperties properties = buildProperties();
+  private final AsyncConfiguration config = new AsyncConfiguration(properties);
 
   @Test
   void dataDistributorExecutorIsConfigured() {
     ThreadPoolTaskExecutor executor = config.dataDistributorTaskExecutor();
-    assertThat(executor.getCorePoolSize()).isEqualTo(20);
-    assertThat(executor.getMaxPoolSize()).isEqualTo(50);
+    assertThat(executor.getCorePoolSize()).isEqualTo(properties.getAsync().getCorePoolSize());
+    assertThat(executor.getMaxPoolSize()).isEqualTo(properties.getAsync().getMaxPoolSize());
+    assertThat(executor.getThreadNamePrefix()).isEqualTo(properties.getAsync().getThreadNamePrefix());
   }
 
   @Test
   void rateLimitedExecutorDelegates() {
     ThreadPoolTaskExecutor executor = config.dataDistributorTaskExecutor();
     assertThat(config.rateLimitedExecutor(executor)).isSameAs(executor);
+  }
+
+  private DataDistributorProperties buildProperties() {
+    DataDistributorProperties props = new DataDistributorProperties();
+    DataDistributorProperties.Async async = new DataDistributorProperties.Async();
+    async.setCorePoolSize(4);
+    async.setMaxPoolSize(8);
+    async.setQueueCapacity(123);
+    async.setThreadNamePrefix("TestAsync-");
+    props.setAsync(async);
+    return props;
   }
 }
