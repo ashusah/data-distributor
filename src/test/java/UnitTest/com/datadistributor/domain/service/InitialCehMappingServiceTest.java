@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.outport.InitialCehMappingPort;
+import com.datadistributor.domain.service.InitialCehMappingDomainService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,19 +16,19 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 /**
- * Unit tests for {@link InitialCehMappingService}.
+ * Unit tests for {@link InitialCehMappingDomainService}.
  */
 class InitialCehMappingServiceTest {
 
   @Mock
   private InitialCehMappingPort port;
 
-  private InitialCehMappingService service;
+  private InitialCehMappingDomainService service;
 
   @BeforeEach
   void setup() {
     MockitoAnnotations.openMocks(this);
-    service = new InitialCehMappingService(port);
+    service = new InitialCehMappingDomainService(port);
   }
 
   @Test

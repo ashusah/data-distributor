@@ -17,16 +17,16 @@ import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.outport.SignalEventSenderPort;
 import com.datadistributor.domain.outport.SignalPort;
-import com.datadistributor.domain.service.AccountBalanceService;
-import com.datadistributor.domain.service.InitialCehMappingService;
-import com.datadistributor.domain.service.InitialCehQueryService;
-import com.datadistributor.domain.service.DialSignalDataExportService;
-import com.datadistributor.domain.service.SignalQueryService;
+import com.datadistributor.domain.service.AccountBalanceDomainService;
+import com.datadistributor.domain.service.InitialCehMappingDomainService;
+import com.datadistributor.domain.service.InitialCehQueryDomainService;
+import com.datadistributor.domain.service.DialSignalDataExportDomainService;
+import com.datadistributor.domain.service.SignalQueryDomainService;
 import com.datadistributor.domain.service.SignalEventDomainService;
-import com.datadistributor.domain.service.SignalEventProcessingService;
-import com.datadistributor.domain.service.SignalEventRetryService;
+import com.datadistributor.domain.service.SignalEventProcessingDomainService;
+import com.datadistributor.domain.service.SignalEventRetryDomainService;
 import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
-import com.datadistributor.domain.service.SignalDispatchSelector;
+import com.datadistributor.domain.service.SignalDispatchDomainSelector;
 import com.datadistributor.outadapter.report.AzureBlobReportPublisher;
 import com.datadistributor.outadapter.report.AzureBlobStorageClient;
 import java.time.Clock;
@@ -63,7 +63,7 @@ public class DistributorConfiguration {
         DataDistributorProperties properties,
         DeliveryReportPublisher deliveryReportPublisher
     ) {
-        return new SignalEventProcessingService(
+        return new SignalEventProcessingDomainService(
             repository,
             batchPort,
             signalAuditQueryPort,
@@ -77,7 +77,7 @@ public class DistributorConfiguration {
     SignalEventRetryUseCase signalEventRetryUseCase(SignalAuditQueryPort signalAuditQueryPort,
                                                     SignalEventPort signalEventRepository,
                                                     SignalEventSenderPort signalEventSenderPort) {
-        return new SignalEventRetryService(
+        return new SignalEventRetryDomainService(
             signalAuditQueryPort,
             signalEventRepository,
             signalEventSenderPort);
@@ -85,17 +85,17 @@ public class DistributorConfiguration {
 
     @Bean
     InitialCehMappingUseCase initialCehMappingUseCase(InitialCehMappingPort port) {
-        return new InitialCehMappingService(port);
+        return new InitialCehMappingDomainService(port);
     }
 
     @Bean
     InitialCehQueryUseCase initialCehQueryUseCase(InitialCehMappingPort port) {
-        return new InitialCehQueryService(port);
+        return new InitialCehQueryDomainService(port);
     }
 
     @Bean
     AccountBalanceUseCase accountBalanceQueryUseCase(AccountBalanceOverviewPort port) {
-        return new AccountBalanceService(port);
+        return new AccountBalanceDomainService(port);
     }
 
     @Bean
@@ -109,22 +109,13 @@ public class DistributorConfiguration {
     }
 
     @Bean
-    DialSignalDataExportService dialSignalDataExportService(SignalEventUseCase signalEventUseCase,
-                                                           SignalUseCase signalQueryUseCase,
-                                                           AccountBalanceOverviewPort accountBalanceOverviewPort,
-                                                           FileStoragePort storageClient,
-                                                           DataDistributorProperties properties) {
-        return new DialSignalDataExportService(signalEventUseCase, signalQueryUseCase, accountBalanceOverviewPort, storageClient, properties);
-    }
-
-    @Bean
     Clock systemClock() {
         return Clock.systemDefaultZone();
     }
 
     @Bean
     SignalUseCase signalQueryUseCase(SignalPort signalPort) {
-        return new SignalQueryService(signalPort);
+        return new SignalQueryDomainService(signalPort);
     }
 
     @Bean
@@ -133,7 +124,7 @@ public class DistributorConfiguration {
                                                                 SignalAuditQueryPort signalAuditQueryPort,
                                                                 InitialCehMappingPort initialCehMappingPort,
                                                                 DataDistributorProperties properties) {
-        return new SignalDispatchSelector(
+        return new SignalDispatchDomainSelector(
             signalEventRepository,
             signalPort,
             signalAuditQueryPort,

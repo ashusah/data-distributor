@@ -3,7 +3,7 @@ package com.datadistributor.inadapter.scheduler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datadistributor.application.config.DataDistributorProperties;
-import com.datadistributor.domain.service.DialSignalDataExportService;
+import com.datadistributor.domain.service.DialSignalDataExportDomainService;
 import com.datadistributor.domain.inport.SignalEventUseCase;
 import com.datadistributor.domain.inport.SignalUseCase;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
@@ -30,7 +30,7 @@ class DialSignalDataProviderSchedulerTest {
     assertThat(exportService.lastDate).isEqualTo(LocalDate.of(2025, 12, 4));
   }
 
-  private static class CapturingExportService extends DialSignalDataExportService {
+  private static class CapturingExportService extends DialSignalDataExportDomainService {
     LocalDate lastDate;
 
     CapturingExportService() {

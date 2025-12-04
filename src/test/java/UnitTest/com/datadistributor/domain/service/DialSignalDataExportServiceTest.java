@@ -10,6 +10,7 @@ import com.datadistributor.domain.inport.SignalEventUseCase;
 import com.datadistributor.domain.inport.SignalUseCase;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import com.datadistributor.domain.outport.FileStoragePort;
+import com.datadistributor.domain.service.DialSignalDataExportDomainService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,7 @@ class DialSignalDataExportServiceTest {
 
   private final CapturingStorage storage = new CapturingStorage();
   private final List<SignalEvent> events = new ArrayList<>();
-  private DialSignalDataExportService service;
+  private DialSignalDataExportDomainService service;
 
   @BeforeEach
   void setUp() {
@@ -28,7 +29,7 @@ class DialSignalDataExportServiceTest {
     props.getStorage().setDialFolder("dial-folder");
     props.getStorage().setDialFilePrefix("dial-prefix");
 
-    service = new DialSignalDataExportService(
+    service = new DialSignalDataExportDomainService(
         new StubSignalEventUseCase(),
         new StubSignalQueryUseCase(),
         new StubAccountPort(),

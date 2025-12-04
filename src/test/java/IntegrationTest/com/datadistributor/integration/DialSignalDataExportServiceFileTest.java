@@ -10,7 +10,7 @@ import com.datadistributor.domain.inport.SignalEventUseCase;
 import com.datadistributor.domain.inport.SignalUseCase;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import com.datadistributor.domain.outport.FileStoragePort;
-import com.datadistributor.domain.service.DialSignalDataExportService;
+import com.datadistributor.domain.service.DialSignalDataExportDomainService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -32,7 +32,7 @@ class DialSignalDataExportServiceFileTest {
     props.getStorage().setDialSchedulerEnabled(true);
 
     var events = List.of(sampleEvent(10L));
-    var service = new DialSignalDataExportService(
+    var service = new DialSignalDataExportDomainService(
         new StubSignalEventUseCase(events),
         new StubSignalQueryUseCase(),
         new StubAccountBalancePort(),

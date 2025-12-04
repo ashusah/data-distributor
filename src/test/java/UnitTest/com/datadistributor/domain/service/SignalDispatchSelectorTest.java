@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.outport.InitialCehMappingPort;
+import com.datadistributor.domain.service.SignalDispatchDomainSelector;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.outport.SignalPort;
@@ -26,8 +27,8 @@ class SignalDispatchSelectorTest {
   private final InMemorySignalPort signalPort = new InMemorySignalPort();
   private final InMemoryAuditPort auditPort = new InMemoryAuditPort();
   private final InMemoryInitialCehPort cehPort = new InMemoryInitialCehPort();
-  private final SignalDispatchSelector selector =
-      new SignalDispatchSelector(eventRepo, signalPort, auditPort, cehPort, 250, 5, 1);
+  private final SignalDispatchDomainSelector selector =
+      new SignalDispatchDomainSelector(eventRepo, signalPort, auditPort, cehPort, 250, 5, 1);
 
   @Test
   void sendsEarliestOverlimitWhenBalanceBreached() {
@@ -98,7 +99,7 @@ class SignalDispatchSelectorTest {
     InMemorySignalPort signals = new InMemorySignalPort();
     InMemoryAuditPort audit = new InMemoryAuditPort();
     InMemoryInitialCehPort ceh = new InMemoryInitialCehPort();
-    SignalDispatchSelector selector = new SignalDispatchSelector(repo, signals, audit, ceh, 250, 5, 1);
+    SignalDispatchDomainSelector selector = new SignalDispatchDomainSelector(repo, signals, audit, ceh, 250, 5, 1);
     LocalDate start = LocalDate.of(2025, 1, 1);
 
     // Scenario 1: long open, send earliest overlimit on DPD6
@@ -209,8 +210,8 @@ class SignalDispatchSelectorTest {
     InMemorySignalPort followUpSignalPort = new InMemorySignalPort();
     InMemoryAuditPort followUpAudit = new InMemoryAuditPort();
     InMemoryInitialCehPort followUpCeh = new InMemoryInitialCehPort();
-    SignalDispatchSelector followUpSelector =
-        new SignalDispatchSelector(followUpRepo, followUpSignalPort, followUpAudit, followUpCeh, 250, 5, 1);
+    SignalDispatchDomainSelector followUpSelector =
+        new SignalDispatchDomainSelector(followUpRepo, followUpSignalPort, followUpAudit, followUpCeh, 250, 5, 1);
 
     long followUpSignalId = 42L;
     followUpSignalPort.save(signal(followUpSignalId, start, null));
@@ -340,7 +341,7 @@ class SignalDispatchSelectorTest {
       InMemorySignalPort signalPort = new InMemorySignalPort();
       InMemoryAuditPort auditPort = new InMemoryAuditPort();
       InMemoryInitialCehPort cehPort = new InMemoryInitialCehPort();
-      SignalDispatchSelector selector = new SignalDispatchSelector(eventRepo, signalPort, auditPort, cehPort, 250, 5, 1);
+      SignalDispatchDomainSelector selector = new SignalDispatchDomainSelector(eventRepo, signalPort, auditPort, cehPort, 250, 5, 1);
 
       long signalId = 1000L + scenario.name.hashCode();
       Signal signal = signal(signalId, start, null);

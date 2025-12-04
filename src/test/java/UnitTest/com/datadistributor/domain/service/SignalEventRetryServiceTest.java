@@ -7,6 +7,7 @@ import com.datadistributor.domain.job.JobResult;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.outport.SignalEventSenderPort;
+import com.datadistributor.domain.service.SignalEventRetryDomainService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -22,14 +23,14 @@ class SignalEventRetryServiceTest {
   private FakeAuditPort auditPort;
   private FakeEventRepository eventRepository;
   private FakeSenderPort senderPort;
-  private SignalEventRetryService service;
+  private SignalEventRetryDomainService service;
 
   @BeforeEach
   void setUp() {
     auditPort = new FakeAuditPort();
     eventRepository = new FakeEventRepository();
     senderPort = new FakeSenderPort();
-    service = new SignalEventRetryService(
+    service = new SignalEventRetryDomainService(
         auditPort,
         eventRepository,
         senderPort

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import com.datadistributor.domain.AccountBalance;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
+import com.datadistributor.domain.service.AccountBalanceDomainService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,19 +13,19 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 /**
- * Unit tests for {@link AccountBalanceService}.
+ * Unit tests for {@link AccountBalanceDomainService}.
  */
 class AccountBalanceServiceTest {
 
   @Mock
   private AccountBalanceOverviewPort port;
 
-  private AccountBalanceService service;
+  private AccountBalanceDomainService service;
 
   @BeforeEach
   void setup() {
     MockitoAnnotations.openMocks(this);
-    service = new AccountBalanceService(port);
+    service = new AccountBalanceDomainService(port);
   }
 
   @Test

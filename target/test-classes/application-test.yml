@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MSSQLServer
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  main:
+    allow-bean-definition-overriding: true
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  sql:
+    init:
+      mode: never
+  cloud:
+    discovery:
+      enabled: false
+    config:
+      enabled: false
+    compatibility-verifier:
+      enabled: false
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.client.discovery.simple.SimpleDiscoveryClientAutoConfiguration
+
+data-distributor:
+  external-api:
+    base-url: http://localhost:8081
+    request-timeout-seconds: 5
+    retry:
+      attempts: 1
+      backoff-seconds: 1
+      max-backoff-seconds: 1
+  processing:
+    batch-size: 3
+    rate-limit: 5
+  http:
+    connect-timeout-ms: 5000
+    response-timeout-seconds: 5
+    read-timeout-seconds: 5
+    write-timeout-seconds: 5
+azure:
+  keyvault:
+    enabled: false

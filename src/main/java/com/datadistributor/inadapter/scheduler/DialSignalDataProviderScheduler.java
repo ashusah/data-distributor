@@ -1,6 +1,6 @@
 package com.datadistributor.inadapter.scheduler;
 
-import com.datadistributor.domain.service.DialSignalDataExportService;
+import com.datadistributor.domain.service.DialSignalDataExportDomainService;
 import com.datadistributor.application.config.DataDistributorProperties;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -16,13 +16,13 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class DialSignalDataProviderScheduler {
 
-  private final DialSignalDataExportService exportService;
+  private final DialSignalDataExportDomainService exportService;
   private final int dayOffset;
   private final Clock clock;
   private final boolean enabled;
 
   public DialSignalDataProviderScheduler(
-      DialSignalDataExportService exportService,
+      DialSignalDataExportDomainService exportService,
       @Value("${data-distributor.scheduler.dial-signal-day-offset:0}") int dayOffset,
       Clock clock,
       DataDistributorProperties properties) {

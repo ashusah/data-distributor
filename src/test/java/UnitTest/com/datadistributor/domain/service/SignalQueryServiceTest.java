@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.outport.SignalPort;
+import com.datadistributor.domain.service.SignalQueryDomainService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,19 +13,19 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 /**
- * Unit tests for {@link SignalQueryService}.
+ * Unit tests for {@link SignalQueryDomainService}.
  */
 class SignalQueryServiceTest {
 
   @Mock
   private SignalPort port;
 
-  private SignalQueryService service;
+  private SignalQueryDomainService service;
 
   @BeforeEach
   void setup() {
     MockitoAnnotations.openMocks(this);
-    service = new SignalQueryService(port);
+    service = new SignalQueryDomainService(port);
   }
 
   @Test

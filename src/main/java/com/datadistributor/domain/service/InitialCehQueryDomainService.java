@@ -1,0 +1,23 @@
+package com.datadistributor.domain.service;
+
+import com.datadistributor.domain.inport.InitialCehQueryUseCase;
+import com.datadistributor.domain.outport.InitialCehMappingPort;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Domain service that retrieves previously stored CEH initial event ids for a signal.
+ */
+@RequiredArgsConstructor
+public class InitialCehQueryDomainService implements InitialCehQueryUseCase {
+
+  private final InitialCehMappingPort port;
+
+  @Override
+  public Optional<String> findInitialCehId(Long signalId) {
+    if (signalId == null) {
+      return Optional.empty();
+    }
+    return port.findInitialCehId(signalId);
+  }
+}

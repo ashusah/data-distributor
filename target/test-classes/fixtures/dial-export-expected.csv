@@ -1,0 +1,2 @@
+EventId,AccountNumber,IBAN,CustomerId,GRV,ProductId,CurrencyCode,SignalStartDate,SignalEndDate,SignalType,DebitAmount,BookDate
+10,999,DE1234567890123456,321,1,2,EUR,2025-12-01,2025-12-03,OVERLIMIT_SIGNAL,500,2025-12-01

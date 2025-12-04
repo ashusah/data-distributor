@@ -11,7 +11,7 @@ import com.datadistributor.domain.outport.SignalAuditQueryPort;
 import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventPort;
 import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
-import com.datadistributor.domain.service.SignalEventProcessingService;
+import com.datadistributor.domain.service.SignalEventProcessingDomainService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -36,7 +36,7 @@ class SignalEventDeliveryReportFileTest {
     var batchPort = new StubBatchPort(new BatchResult(2, 1));
     var publisher = new FileWritingReportPublisher(tempDir);
 
-    var service = new SignalEventProcessingService(
+    var service = new SignalEventProcessingDomainService(
         repository,
         batchPort,
         new AlwaysPassAuditQueryPort(),
