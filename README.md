@@ -1,79 +1,95 @@
 # Data Distributor
 
-![Project logo](https://dummyimage.com/240x120/1f3c88/ffffff&text=Data+Distributor)
+![Project logo](https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=960&q=80)
 
-## Overview
-Data Distributor is a Spring Boot 3 (Java 17) service built with hexagonal architecture. It ingests signal events, applies business selection rules, posts batches to external CEH endpoints via Feign/WebClient, persists audit records, and produces delivery reports to Azure Blob Storage. Scheduling, retry, and circuit-breaking are first-class features, with clear ports/adapters boundaries for storage, messaging, and web.
+> A bright, event-driven Spring Boot 3 service that routes financial signal events to CEH, ships audit-friendly reports to Azure Blob Storage, and keeps strong boundaries between domain, adapters, and configuration.
 
-## Why you might like this project
-- Hexagonal + SOLID structure: domain-first services with explicit ports for web, persistence, and reporting.
-- Robust outbound delivery: Feign (blocking) and WebClient (reactive) paths with retries, circuit breakers, and audit trails.
-- Reporting and storage: Delivery reports and dial exports uploaded to Azure Blob Storage through an adapter seam.
-- Scheduling and retry: Primary and retry schedulers with configurable cron/flags; prerequisite guards to avoid out-of-order sends.
-- Testability: Unit and integration suites exercising schedulers, dispatch selector, retry, CEH propagation, and Azure adapters.
+## At a Glance
+- **Hexagonal + SOLID**: Ports for storage, web, audit, and reporting; adapters stay thin.
+- **Dual delivery paths**: Blocking Feign vs. non-blocking WebClient, both behind the same sender port.
+- **Safety nets**: Circuit breakers, retries, audit persistence, and prerequisite checks to prevent out-of-order sends.
+- **Scheduling + retry**: Primary schedules plus an hourly retry window (skips Mondays) with feature flags and cron controls.
+- **Reporting**: CEH delivery reports and Dial exports pushed to Azure Blob Storage through a seam that can be faked in tests.
+
+## Contents
+- [Getting Started](#getting-started)
+- [Configuration Quick Guide](#configuration-quick-guide)
+- [Architecture](#architecture)
+- [Testing](#testing)
+- [Operations](#operations)
+- [Release Notes](#release-notes)
+- [Development Tips](#development-tips)
+- [Useful Commands](#useful-commands)
 
 ## Getting Started
-
 ### Prerequisites
 - Java 17+
 - Maven 3.9+
-- (Optional) Docker if you want to run supporting services locally
+- (Optional) Docker for any local dependencies you want to mirror
 
 ### Build & Test
 ```bash
 mvn clean test
 ```
 
-### Run the application
+### Run the Application
 ```bash
 mvn spring-boot:run
 ```
 
-### Key Configuration (application.yml / env)
-- `data-distributor.external-api.use-blocking-client` – `true` for Feign, `false` for WebClient.
-- `data-distributor.external-api.base-url` – CEH endpoint.
-- `data-distributor.storage.enabled` – toggle Azure Blob uploads.
-- `data-distributor.storage.connection-string` – Azure Storage connection string.
-- `data-distributor.storage.container` / `folder` – target container/folder for reports.
-- `data-distributor.scheduler.*` – cron expressions and enablement flags for primary and retry schedulers.
-- `data-distributor.azure.keyvault.*` – enable/disable and configure Key Vault SSL context.
+### Local Profiles (examples)
+- `spring.profiles.active=dev`: local defaults, no Key Vault.
+- `spring.profiles.active=test`: in-memory H2, stubbed external APIs.
+- `spring.profiles.active=prod`: real CEH endpoints, Azure storage, Key Vault SSL.
 
-### Project Structure (ports & adapters)
-- `domain/` — business services and ports (repositories, senders, audit queries, file storage).
-- `inadapter/` — REST controller, schedulers, retry orchestration.
-- `outadapter/` — JPA repositories, web clients (Feign/WebClient), Azure Blob reporting.
-- `application/` — Spring configuration, properties binding, security (Key Vault SSL).
-- `src/test/java/UnitTest` & `src/test/java/IntegrationTest` — unit and integration suites.
+## Configuration Quick Guide
+Key properties (application.yml / env):
+- `data-distributor.external-api.use-blocking-client` — `true` → Feign, `false` → WebClient.
+- `data-distributor.external-api.base-url` — CEH endpoint root.
+- `data-distributor.external-api.retry.*` — retry/backoff for WebClient path.
+- `data-distributor.storage.*` — Azure Blob toggles, connection string, container, folder.
+- `data-distributor.scheduler.*` — cron and enablement for main and retry schedulers.
+- `data-distributor.processing.prereq-check-enabled` — block new batches if prior day events are not PASS.
+- `data-distributor.azure.keyvault.*` — optional SSL context for Key Vault secrets.
 
-### Running only unit tests
-```bash
-mvn -q -DskipITs=true test
-```
+## Architecture
+- `domain/` — services and ports for signals, audits, balance lookups, dispatch selection, retries, and reporting.
+- `application/` — Spring wiring, config properties, security/Key Vault helpers.
+- `inadapter/` — REST endpoints, schedulers (primary + retry), DTO mappers.
+- `outadapter/` — JPA repositories, web clients (Feign/WebClient), Azure Blob client, report writers.
+- `src/test/java/UnitTest` and `src/test/java/IntegrationTest` — split suites; integration tests load Spring context and H2.
 
-### Running integration tests
-```bash
-mvn -q -Dgroups=integration test
-```
-(Adjust to your tagging; by default both run together.)
+## Testing
+- Run everything: `mvn clean test`
+- Only unit tests (fast): `mvn -q -DskipITs=true test`
+- Only a specific test: `mvn -q -Dtest=SignalEventBatchSenderTest test`
+- Coverage tip: adapters are seam-friendly—prefer fakes over mocking finals.
+
+## Operations
+- **Prerequisite guard**: daily batch stops if any prior-day event has a last audit status other than PASS.
+- **Retry window**: hourly from 13:00–23:00 (skips Monday) to resend failed events for the same audit day.
+- **Storage uploads**: CEH delivery reports and Dial exports land in `container/folder` on Azure Blob; adapter is swappable for local testing.
+- **Feature flags**: each scheduler and client path (Feign/WebClient) is gated by configuration for safe toggles.
 
 ## Release Notes
 
-| Version | Date       | Highlights                                                    |
-|---------|------------|---------------------------------------------------------------|
-| 0.1.0   | 2025-12-04 | Initial public baseline: hexagonal layout, schedulers, CEH delivery via Feign/WebClient, Azure Blob reporting seam, full unit/integration coverage pass. |
+| Version | Date       | Highlights                                                                                               |
+|---------|------------|----------------------------------------------------------------------------------------------------------|
+| 0.1.0   | 2025-12-04 | Baseline: hexagonal layout, Feign/WebClient delivery, schedulers + retry, Azure Blob report seam, tests. |
 
-Add new entries here as you cut releases (features, migration notes, breaking changes).
+Add future versions here (features, migrations, breaking changes).
 
 ## Development Tips
-- Keep new adapters behind ports; avoid leaking framework classes into the domain.
-- Prefer constructor injection and small services to respect SRP.
-- For new outbound integrations, add a thin adapter + port and cover it with a stub-backed unit test (no final-class mocking needed).
-- When adding schedulers, guard with feature flags and cron in config; mirror retry/prereq behaviour already present.
+- Keep framework types out of the domain; introduce ports for new integrations.
+- Constructor injection everywhere; avoid field injection.
+- For new schedulers, mirror the existing flag + cron pattern and add integration coverage.
+- When adding a new adapter, pair it with a fake implementation for fast unit tests.
+- Document new config keys in this README and in `application.yml` defaults.
 
 ## Useful Commands
 - Format/verify quickly: `mvn -q -DskipTests compile`
-- Run a single test: `mvn -q -Dtest=SignalEventBatchSenderTest test`
-- Package: `mvn clean package`
+- Package the app: `mvn clean package`
+- Inspect effective config: `mvn -q help:effective-pom`
 
 ## Support & Links
 - Spring Boot reference: https://docs.spring.io/spring-boot/docs/3.5.6/reference/html/
@@ -81,4 +97,4 @@ Add new entries here as you cut releases (features, migration notes, breaking ch
 - Azure Blob Storage docs: https://learn.microsoft.com/azure/storage/blobs/
 
 ---
-Happy shipping! If you add features, extend the Release Notes table and document any new flags or ports here.
+Happy shipping! Keep the Release Notes fresh and record any new feature flags or ports as you add them.
