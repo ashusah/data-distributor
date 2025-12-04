@@ -1,11 +1,12 @@
 package com.datadistributor.application.config;
 
-import com.datadistributor.domain.inport.AccountBalanceQueryUseCase;
+import com.datadistributor.domain.inport.AccountBalanceUseCase;
 import com.datadistributor.domain.inport.InitialCehMappingUseCase;
 import com.datadistributor.domain.inport.InitialCehQueryUseCase;
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
 import com.datadistributor.domain.inport.SignalEventRetryUseCase;
 import com.datadistributor.domain.inport.SignalEventUseCase;
+import com.datadistributor.domain.inport.SignalUseCase;
 import com.datadistributor.domain.job.JobProgressTracker;
 import com.datadistributor.domain.outport.DeliveryReportPublisher;
 import com.datadistributor.domain.outport.SignalAuditQueryPort;
@@ -16,7 +17,7 @@ import com.datadistributor.domain.outport.SignalEventBatchPort;
 import com.datadistributor.domain.outport.SignalEventRepository;
 import com.datadistributor.domain.outport.SignalEventSenderPort;
 import com.datadistributor.domain.outport.SignalPort;
-import com.datadistributor.domain.service.AccountBalanceQueryService;
+import com.datadistributor.domain.service.AccountBalanceService;
 import com.datadistributor.domain.service.InitialCehMappingService;
 import com.datadistributor.domain.service.InitialCehQueryService;
 import com.datadistributor.domain.service.DialSignalDataExportService;
@@ -24,7 +25,6 @@ import com.datadistributor.domain.service.SignalQueryService;
 import com.datadistributor.domain.service.SignalEventDomainService;
 import com.datadistributor.domain.service.SignalEventProcessingService;
 import com.datadistributor.domain.service.SignalEventRetryService;
-import com.datadistributor.domain.inport.SignalQueryUseCase;
 import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
 import com.datadistributor.domain.service.SignalDispatchSelector;
 import com.datadistributor.outadapter.report.AzureBlobReportPublisher;
@@ -94,8 +94,8 @@ public class DistributorConfiguration {
     }
 
     @Bean
-    AccountBalanceQueryUseCase accountBalanceQueryUseCase(AccountBalanceOverviewPort port) {
-        return new AccountBalanceQueryService(port);
+    AccountBalanceUseCase accountBalanceQueryUseCase(AccountBalanceOverviewPort port) {
+        return new AccountBalanceService(port);
     }
 
     @Bean
@@ -110,7 +110,7 @@ public class DistributorConfiguration {
 
     @Bean
     DialSignalDataExportService dialSignalDataExportService(SignalEventUseCase signalEventUseCase,
-                                                           SignalQueryUseCase signalQueryUseCase,
+                                                           SignalUseCase signalQueryUseCase,
                                                            AccountBalanceOverviewPort accountBalanceOverviewPort,
                                                            FileStoragePort storageClient,
                                                            DataDistributorProperties properties) {
@@ -123,7 +123,7 @@ public class DistributorConfiguration {
     }
 
     @Bean
-    SignalQueryUseCase signalQueryUseCase(SignalPort signalPort) {
+    SignalUseCase signalQueryUseCase(SignalPort signalPort) {
         return new SignalQueryService(signalPort);
     }
 

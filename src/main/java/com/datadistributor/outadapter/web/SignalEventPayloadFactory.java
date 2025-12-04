@@ -2,7 +2,7 @@ package com.datadistributor.outadapter.web;
 
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.application.config.DataDistributorProperties;
-import com.datadistributor.domain.inport.AccountBalanceQueryUseCase;
+import com.datadistributor.domain.inport.AccountBalanceUseCase;
 import com.datadistributor.domain.inport.InitialCehQueryUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class SignalEventPayloadFactory {
 
   private final InitialCehQueryUseCase initialCehQueryUseCase;
-  private final AccountBalanceQueryUseCase accountBalanceQueryUseCase;
+  private final AccountBalanceUseCase accountBalanceQueryUseCase;
   private final DataDistributorProperties properties;
 
   public SignalEventPayload buildPayload(SignalEvent event) {

@@ -5,7 +5,7 @@ import static org.mockito.Mockito.when;
 
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
-import com.datadistributor.domain.inport.AccountBalanceQueryUseCase;
+import com.datadistributor.domain.inport.AccountBalanceUseCase;
 import com.datadistributor.domain.inport.InitialCehQueryUseCase;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -20,7 +20,7 @@ class SignalEventPayloadFactoryAdditionalTest {
   private InitialCehQueryUseCase initialCehQueryUseCase;
 
   @Mock
-  private AccountBalanceQueryUseCase accountBalanceQueryUseCase;
+  private AccountBalanceUseCase accountBalanceQueryUseCase;
 
   private SignalEventPayloadFactory factory;
 

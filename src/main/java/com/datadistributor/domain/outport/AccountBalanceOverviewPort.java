@@ -1,6 +1,6 @@
 package com.datadistributor.domain.outport;
 
-import com.datadistributor.domain.AccountBalanceOverview;
+import com.datadistributor.domain.AccountBalance;
 import java.util.Optional;
 
 /**
@@ -10,5 +10,5 @@ public interface AccountBalanceOverviewPort {
 
   Optional<Long> findBcNumberByAgreementId(Long agreementId);
 
-  Optional<AccountBalanceOverview> findByAgreementId(Long agreementId);
+  Optional<AccountBalance> findByAgreementId(Long agreementId);
 }

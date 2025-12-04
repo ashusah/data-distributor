@@ -76,8 +76,8 @@ class EntityRoundTripTest {
   }
 
   @Test
-  void accountBalanceOverviewJpaEntity_gettersAndSetters() {
-    AccountBalanceOverviewJpaEntity entity = new AccountBalanceOverviewJpaEntity();
+  void accountBalanceJpaEntity_gettersAndSetters() {
+    AccountBalanceJpaEntity entity = new AccountBalanceJpaEntity();
     entity.setAgreementId(1L);
     entity.setGrv((short) 2);
     entity.setIban("iban");
@@ -89,6 +89,7 @@ class EntityRoundTripTest {
     entity.setLastBookDateBalanceCrToDt(LocalDate.of(2023, 12, 31));
     entity.setIsAgreementPartOfAcbs("Y");
     entity.setIsMarginAccountLinked("N");
+    entity.setProductId("P1");
 
     assertThat(entity.getAgreementId()).isEqualTo(1L);
     assertThat(entity.getGrv()).isEqualTo((short) 2);
@@ -101,6 +102,7 @@ class EntityRoundTripTest {
     assertThat(entity.getLastBookDateBalanceCrToDt()).isEqualTo(LocalDate.of(2023, 12, 31));
     assertThat(entity.getIsAgreementPartOfAcbs()).isEqualTo("Y");
     assertThat(entity.getIsMarginAccountLinked()).isEqualTo("N");
+    assertThat(entity.getProductId()).isEqualTo("P1");
   }
 
   @Test

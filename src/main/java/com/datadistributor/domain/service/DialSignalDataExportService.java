@@ -1,11 +1,11 @@
 package com.datadistributor.domain.service;
 
 import com.datadistributor.application.config.DataDistributorProperties;
-import com.datadistributor.domain.SignalEvent;
-import com.datadistributor.domain.AccountBalanceOverview;
+import com.datadistributor.domain.AccountBalance;
 import com.datadistributor.domain.Signal;
+import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.SignalEventUseCase;
-import com.datadistributor.domain.inport.SignalQueryUseCase;
+import com.datadistributor.domain.inport.SignalUseCase;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import com.datadistributor.domain.outport.FileStoragePort;
 import java.time.LocalDate;
@@ -22,13 +22,13 @@ public class DialSignalDataExportService {
 
   private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private final SignalEventUseCase signalEventUseCase;
-  private final SignalQueryUseCase signalQueryUseCase;
+  private final SignalUseCase signalQueryUseCase;
   private final AccountBalanceOverviewPort accountBalanceOverviewPort;
   private final FileStoragePort storageClient;
   private final DataDistributorProperties.Storage storage;
 
   public DialSignalDataExportService(SignalEventUseCase signalEventUseCase,
-                                     SignalQueryUseCase signalQueryUseCase,
+                                     SignalUseCase signalQueryUseCase,
                                      AccountBalanceOverviewPort accountBalanceOverviewPort,
                                      FileStoragePort storageClient,
                                      DataDistributorProperties properties) {
@@ -65,7 +65,7 @@ public class DialSignalDataExportService {
   private String toCsvRow(SignalEvent event) {
     Signal signal = signalQueryUseCase.findBySignalId(event.getSignalId())
         .orElseGet(() -> signalFallback(event));
-    AccountBalanceOverview account = accountBalanceOverviewPort.findByAgreementId(event.getAgreementId())
+    AccountBalance account = accountBalanceOverviewPort.findByAgreementId(event.getAgreementId())
         .orElse(null);
 
     return String.join(",",

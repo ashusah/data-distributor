@@ -8,6 +8,7 @@ import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.mapstruct.factory.Mappers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -23,7 +24,7 @@ class SignalRepositoryAdapterTest {
   @BeforeEach
   void setup() {
     MockitoAnnotations.openMocks(this);
-    adapter = new SignalRepositoryAdapter(repository, new SignalMapper());
+    adapter = new SignalRepositoryAdapter(repository, Mappers.getMapper(SignalMapper.class));
   }
 
   @Test

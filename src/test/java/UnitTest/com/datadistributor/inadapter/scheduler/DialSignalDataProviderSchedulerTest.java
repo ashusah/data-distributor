@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.service.DialSignalDataExportService;
 import com.datadistributor.domain.inport.SignalEventUseCase;
-import com.datadistributor.domain.inport.SignalQueryUseCase;
+import com.datadistributor.domain.inport.SignalUseCase;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
-import com.datadistributor.domain.AccountBalanceOverview;
+import com.datadistributor.domain.AccountBalance;
 import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.outport.FileStoragePort;
 import java.time.Clock;
@@ -60,8 +60,8 @@ class DialSignalDataProviderSchedulerTest {
       return (folder, fileName, content) -> {};
     }
 
-    private static SignalQueryUseCase dummySignalQuery() {
-      return new SignalQueryUseCase() {
+    private static SignalUseCase dummySignalQuery() {
+      return new SignalUseCase() {
         @Override
         public java.util.Optional<Signal> findBySignalId(Long signalId) {
           return java.util.Optional.empty();
@@ -82,7 +82,7 @@ class DialSignalDataProviderSchedulerTest {
         }
 
         @Override
-        public java.util.Optional<AccountBalanceOverview> findByAgreementId(Long agreementId) {
+        public java.util.Optional<AccountBalance> findByAgreementId(Long agreementId) {
           return java.util.Optional.empty();
         }
       };

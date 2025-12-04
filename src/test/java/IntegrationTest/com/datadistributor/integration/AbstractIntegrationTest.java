@@ -2,10 +2,10 @@ package com.datadistributor.integration;
 
 import com.datadistributor.application.DataDistributorApplication;
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
-import com.datadistributor.outadapter.entity.AccountBalanceOverviewJpaEntity;
+import com.datadistributor.outadapter.entity.AccountBalanceJpaEntity;
 import com.datadistributor.outadapter.entity.SignalAuditJpaEntity;
 import com.datadistributor.outadapter.entity.SignalEventJpaEntity;
-import com.datadistributor.outadapter.repository.springjpa.AccountBalanceOverviewJpaRepository;
+import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.CehResponseInitialEventRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
@@ -33,7 +33,7 @@ abstract class AbstractIntegrationTest {
   @Autowired
   protected CehResponseInitialEventRepository cehInitRepo;
   @Autowired
-  protected AccountBalanceOverviewJpaRepository accountRepo;
+  protected AccountBalanceJpaRepository accountRepo;
 
   protected LocalDate targetDate;
 
@@ -75,7 +75,7 @@ abstract class AbstractIntegrationTest {
   }
 
   protected void saveAccount(long agreementId, long bcNumber) {
-    AccountBalanceOverviewJpaEntity acct = new AccountBalanceOverviewJpaEntity();
+    AccountBalanceJpaEntity acct = new AccountBalanceJpaEntity();
     acct.setAgreementId(agreementId);
     acct.setGrv((short) 1);
     acct.setIban("DE1234567890123456");

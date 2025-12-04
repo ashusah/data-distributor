@@ -3,12 +3,12 @@ package com.datadistributor.domain.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datadistributor.application.config.DataDistributorProperties;
+import com.datadistributor.domain.AccountBalance;
+import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.SignalEventUseCase;
-import com.datadistributor.domain.inport.SignalQueryUseCase;
+import com.datadistributor.domain.inport.SignalUseCase;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
-import com.datadistributor.domain.AccountBalanceOverview;
-import com.datadistributor.domain.Signal;
 import com.datadistributor.domain.outport.FileStoragePort;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -76,7 +76,7 @@ class DialSignalDataExportServiceTest {
     }
   }
 
-  private static class StubSignalQueryUseCase implements SignalQueryUseCase {
+  private static class StubSignalQueryUseCase implements SignalUseCase {
     @Override
     public java.util.Optional<Signal> findBySignalId(Long signalId) {
       Signal s = new Signal();
@@ -100,8 +100,8 @@ class DialSignalDataExportServiceTest {
     }
 
     @Override
-    public java.util.Optional<AccountBalanceOverview> findByAgreementId(Long agreementId) {
-      AccountBalanceOverview abo = new AccountBalanceOverview();
+    public java.util.Optional<AccountBalance> findByAgreementId(Long agreementId) {
+      AccountBalance abo = new AccountBalance();
       abo.setAgreementId(agreementId);
       abo.setIban("DE1234567890123456");
       abo.setCurrencyCode("EUR");

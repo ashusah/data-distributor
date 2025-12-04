@@ -1,6 +1,7 @@
 package com.datadistributor.domain.service;
 
-import com.datadistributor.domain.inport.AccountBalanceQueryUseCase;
+import com.datadistributor.domain.AccountBalance;
+import com.datadistributor.domain.inport.AccountBalanceUseCase;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,7 @@ import lombok.RequiredArgsConstructor;
  * Domain service delegating account balance lookups to the underlying port.
  */
 @RequiredArgsConstructor
-public class AccountBalanceQueryService implements AccountBalanceQueryUseCase {
+public class AccountBalanceService implements AccountBalanceUseCase {
 
   private final AccountBalanceOverviewPort port;
 
@@ -19,5 +20,13 @@ public class AccountBalanceQueryService implements AccountBalanceQueryUseCase {
       return Optional.empty();
     }
     return port.findBcNumberByAgreementId(agreementId);
+  }
+
+  @Override
+  public AccountBalance getAccountBalanceByAgreementId(Long agreementId) {
+    if (agreementId == null) {
+      return null;
+    }
+    return port.findByAgreementId(agreementId).orElse(null);
   }
 }

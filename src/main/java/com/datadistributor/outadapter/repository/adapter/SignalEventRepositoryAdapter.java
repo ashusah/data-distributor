@@ -42,7 +42,7 @@ public class SignalEventRepositoryAdapter implements SignalEventRepository {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(LocalTime.MAX);
         List<SignalEventJpaEntity> eventEntities = signalEventJpaRepository.findByEventRecordDateTimeBetween(start, end);
-        return signalEventMapper.toDomain(eventEntities);
+        return signalEventMapper.toDomainList(eventEntities);
     }
 
     @Override
@@ -52,7 +52,7 @@ public class SignalEventRepositoryAdapter implements SignalEventRepository {
         LocalDate bookDateTarget = date.minusDays(bookDateLookbackDays);
         List<SignalEventJpaEntity> eventEntities = signalEventJpaRepository.findPageForCEH(
             start, end, minUnauthorizedDebitBalance, bookDateTarget, PageRequest.of(page, size));
-        return signalEventMapper.toDomain(eventEntities);
+        return signalEventMapper.toDomainList(eventEntities);
     }
 
     @Override

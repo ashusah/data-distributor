@@ -5,10 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.datadistributor.outadapter.entity.SignalJpaEntity;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
 class SignalMapperTest {
 
-  private final SignalMapper mapper = new SignalMapper();
+  private final SignalMapper mapper = Mappers.getMapper(SignalMapper.class);
 
   @Test
   void toDomain_returnsNullWhenEntityNull() {

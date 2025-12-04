@@ -3,6 +3,7 @@ package com.datadistributor.domain.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.datadistributor.domain.AccountBalance;
 import com.datadistributor.domain.outport.AccountBalanceOverviewPort;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,19 +12,19 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 /**
- * Unit tests for {@link AccountBalanceQueryService}.
+ * Unit tests for {@link AccountBalanceService}.
  */
-class AccountBalanceQueryServiceTest {
+class AccountBalanceServiceTest {
 
   @Mock
   private AccountBalanceOverviewPort port;
 
-  private AccountBalanceQueryService service;
+  private AccountBalanceService service;
 
   @BeforeEach
   void setup() {
     MockitoAnnotations.openMocks(this);
-    service = new AccountBalanceQueryService(port);
+    service = new AccountBalanceService(port);
   }
 
   @Test
@@ -36,5 +37,19 @@ class AccountBalanceQueryServiceTest {
     when(port.findBcNumberByAgreementId(10L)).thenReturn(Optional.of(99L));
 
     assertThat(service.findBcNumberByAgreementId(10L)).contains(99L);
+  }
+
+  @Test
+  void returnsNullBalanceWhenNotFound() {
+    assertThat(service.getAccountBalanceByAgreementId(1L)).isNull();
+  }
+
+  @Test
+  void returnsBalanceWhenPresent() {
+    AccountBalance balance = new AccountBalance();
+    balance.setAgreementId(1L);
+    when(port.findByAgreementId(1L)).thenReturn(Optional.of(balance));
+
+    assertThat(service.getAccountBalanceByAgreementId(1L)).isSameAs(balance);
   }
 }

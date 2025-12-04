@@ -7,10 +7,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
 class SignalEventMapperTest {
 
-  private final SignalEventMapper mapper = new SignalEventMapper();
+  private final SignalEventMapper mapper = Mappers.getMapper(SignalEventMapper.class);
 
   @Test
   void toDomain_nullEntityReturnsNull() {
@@ -50,8 +51,9 @@ class SignalEventMapperTest {
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
     entity.setUabsEventId(1L);
 
-    List var1 = mapper.toDomain(java.util.Arrays.asList(entity, null));
-    assertThat(var1).hasSize(1);
-    assertThat(var1.get(0)).extracting("uabsEventId").isEqualTo(1L);
+    List<?> mapped = mapper.toDomainList(java.util.Arrays.asList(entity, null));
+    assertThat(mapped).hasSize(2);
+    assertThat(mapped.get(0)).extracting("uabsEventId").isEqualTo(1L);
+    assertThat(mapped.get(1)).isNull();
   }
 }

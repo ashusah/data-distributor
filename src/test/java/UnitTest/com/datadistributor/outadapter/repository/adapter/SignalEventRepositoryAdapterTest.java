@@ -49,7 +49,7 @@ class SignalEventRepositoryAdapterTest {
     when(jpaRepository.findByEventRecordDateTimeBetween(any(), any())).thenReturn(List.of(entity));
     SignalEvent mapped = new SignalEvent();
     mapped.setUabsEventId(1L);
-    when(mapper.toDomain(List.of(entity))).thenReturn(List.of(mapped));
+    when(mapper.toDomainList(List.of(entity))).thenReturn(List.of(mapped));
 
     List<SignalEvent> result = adapter.getAllSignalEventsOfThisDate(date);
 
@@ -68,7 +68,7 @@ class SignalEventRepositoryAdapterTest {
     when(jpaRepository.findPageForCEH(any(), any(), eq(250L), eq(date.minusDays(5)), eq(PageRequest.of(1, 10))))
         .thenReturn(List.of(entity));
     SignalEvent mapped = new SignalEvent();
-    when(mapper.toDomain(List.of(entity))).thenReturn(List.of(mapped));
+    when(mapper.toDomainList(List.of(entity))).thenReturn(List.of(mapped));
 
     List<SignalEvent> result = adapter.getSignalEventsForCEH(date, 1, 10);
 

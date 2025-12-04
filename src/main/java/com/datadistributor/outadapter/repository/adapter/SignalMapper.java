@@ -2,22 +2,17 @@ package com.datadistributor.outadapter.repository.adapter;
 
 import com.datadistributor.domain.Signal;
 import com.datadistributor.outadapter.entity.SignalJpaEntity;
-import org.springframework.stereotype.Component;
+import java.util.List;
+import org.mapstruct.Mapper;
+import org.mapstruct.ReportingPolicy;
 
-/**
- * Converts signal JPA entities into the domain model so adapters can return rich domain objects
- * without leaking persistence concerns.
- */
-@Component
-public class SignalMapper {
+@Mapper(
+    componentModel = "spring",
+    unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
+public interface SignalMapper {
 
-  public Signal toDomain(SignalJpaEntity entity) {
-    if (entity == null) return null;
-    Signal signal = new Signal();
-    signal.setSignalId(entity.getSignalId());
-    signal.setAgreementId(entity.getAgreementId());
-    signal.setSignalStartDate(entity.getSignalStartDate());
-    signal.setSignalEndDate(entity.getSignalEndDate());
-    return signal;
-  }
+    Signal toDomain(SignalJpaEntity entity);
+
+    List<Signal> toDomainList(List<SignalJpaEntity> entities);
 }

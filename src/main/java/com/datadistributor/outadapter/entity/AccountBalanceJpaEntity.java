@@ -8,12 +8,12 @@ import java.time.LocalDate;
 import lombok.Data;
 
 /**
- * Database representation of the account balance overview used to enrich exported signal data.
+ * Database representation of the account balance used to enrich exported signal data.
  */
 @Entity
 @Table(name = "account_balance_overview")
 @Data
-public class AccountBalanceOverviewJpaEntity {
+public class AccountBalanceJpaEntity {
 
   @Id
   @Column(name = "agreement_id", nullable = false)
@@ -48,4 +48,7 @@ public class AccountBalanceOverviewJpaEntity {
 
   @Column(name = "is_margin_account_linked", nullable = false, length = 1)
   private String isMarginAccountLinked = "N";
+
+  @Column(name = "product_id")
+  private String productId;
 }
