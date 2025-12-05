@@ -116,7 +116,18 @@ public class SignalDispatchDomainSelector implements SignalDispatchSelectorUseCa
       return;
     }
 
-    if (balanceBreached || openTooLong) {
+    if (balanceBreached) {
+      if (!initialAlreadySent) {
+        collector.add(earliestOverlimit);
+        return;
+      }
+      if (todaysEvent != null) {
+        collector.add(todaysEvent);
+      }
+      return;
+    }
+
+    if (openTooLong) {
       collector.add(earliestOverlimit);
     }
   }
