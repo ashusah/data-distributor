@@ -23,10 +23,10 @@ public class AccountBalanceDomainService implements AccountBalanceUseCase {
   }
 
   @Override
-  public AccountBalance getAccountBalanceOfAgreement(Long agreementId) {
+  public Optional<AccountBalance> getAccountBalanceOfAgreement(Long agreementId) {
     if (agreementId == null) {
-      return null;
+      return Optional.empty();
     }
-    return port.findByAgreementId(agreementId).orElse(null);
+    return port.findByAgreementId(agreementId);
   }
 }

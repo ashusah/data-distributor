@@ -42,7 +42,7 @@ class AccountBalanceServiceTest {
 
   @Test
   void returnsNullBalanceWhenNotFound() {
-    assertThat(service.getAccountBalanceOfAgreement(1L)).isNull();
+    assertThat(service.getAccountBalanceOfAgreement(1L)).isEmpty();
   }
 
   @Test
@@ -51,6 +51,6 @@ class AccountBalanceServiceTest {
     balance.setAgreementId(1L);
     when(port.findByAgreementId(1L)).thenReturn(Optional.of(balance));
 
-    assertThat(service.getAccountBalanceOfAgreement(1L)).isSameAs(balance);
+    assertThat(service.getAccountBalanceOfAgreement(1L)).containsSame(balance);
   }
 }
