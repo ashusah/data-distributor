@@ -2,7 +2,7 @@ package com.datadistributor.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.datadistributor.outadapter.entity.CehResponseInitialEvent;
+import com.datadistributor.outadapter.entity.CehResponseInitialEventEntity;
 import com.datadistributor.outadapter.entity.CehResponseInitialEventId;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ class InitialCehPropagationIntegrationTest extends AbstractIntegrationTest {
     saveEvent(signalId, agreementId, at(firstDay, 2), "OVERLIMIT_SIGNAL");
     processingUseCase.processEventsForDate("it-init-ceh-day1", firstDay);
     String cehId = cehInitRepo.findFirstByIdSignalId(signalId)
-        .map(CehResponseInitialEvent::getId)
+        .map(CehResponseInitialEventEntity::getId)
         .map(CehResponseInitialEventId::getCehInitialEventId)
         .orElseThrow();
 

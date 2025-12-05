@@ -1,7 +1,7 @@
 package com.datadistributor.outadapter.repository.adapter;
 
 import com.datadistributor.domain.outport.InitialCehMappingPort;
-import com.datadistributor.outadapter.entity.CehResponseInitialEvent;
+import com.datadistributor.outadapter.entity.CehResponseInitialEventEntity;
 import com.datadistributor.outadapter.entity.CehResponseInitialEventId;
 import com.datadistributor.outadapter.repository.springjpa.CehResponseInitialEventRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class InitialCehMappingRepositoryAdapter implements InitialCehMappingPort
     CehResponseInitialEventId id = new CehResponseInitialEventId(
         String.valueOf(cehId),
         signalId);
-    CehResponseInitialEvent initial = new CehResponseInitialEvent(id);
+    CehResponseInitialEventEntity initial = new CehResponseInitialEventEntity(id);
     cehResponseInitialEventRepository.save(initial);
   }
 

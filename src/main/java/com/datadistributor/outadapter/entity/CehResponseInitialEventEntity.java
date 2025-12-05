@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CehResponseInitialEvent {
+public class CehResponseInitialEventEntity {
 
   @EmbeddedId
   private CehResponseInitialEventId id;

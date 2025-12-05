@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.datadistributor.outadapter.entity.CehResponseInitialEvent;
+import com.datadistributor.outadapter.entity.CehResponseInitialEventEntity;
 import com.datadistributor.outadapter.entity.CehResponseInitialEventId;
 import com.datadistributor.outadapter.repository.springjpa.CehResponseInitialEventRepository;
 import java.util.Optional;
@@ -32,9 +32,9 @@ class InitialCehMappingRepositoryAdapterTest {
   void saveInitialCehMapping_persistsCompositeKey() {
     adapter.saveInitialCehMapping(5L, 123L);
 
-    ArgumentCaptor<CehResponseInitialEvent> captor = ArgumentCaptor.forClass(CehResponseInitialEvent.class);
+    ArgumentCaptor<CehResponseInitialEventEntity> captor = ArgumentCaptor.forClass(CehResponseInitialEventEntity.class);
     verify(repository).save(captor.capture());
-    CehResponseInitialEvent saved = captor.getValue();
+    CehResponseInitialEventEntity saved = captor.getValue();
     assertThat(saved.getId().getSignalId()).isEqualTo(5L);
     assertThat(saved.getId().getCehInitialEventId()).isEqualTo("123");
   }
@@ -42,7 +42,7 @@ class InitialCehMappingRepositoryAdapterTest {
   @Test
   void findInitialCehId_returnsValue() {
     CehResponseInitialEventId id = new CehResponseInitialEventId("456", 9L);
-    when(repository.findFirstByIdSignalId(9L)).thenReturn(Optional.of(new CehResponseInitialEvent(id)));
+    when(repository.findFirstByIdSignalId(9L)).thenReturn(Optional.of(new CehResponseInitialEventEntity(id)));
 
     assertThat(adapter.findInitialCehId(9L)).contains("456");
   }

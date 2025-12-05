@@ -114,7 +114,7 @@ class EntityRoundTripTest {
   @Test
   void cehResponseInitialEvent_andId_roundTrip() {
     CehResponseInitialEventId id = new CehResponseInitialEventId("abc", 9L);
-    CehResponseInitialEvent entity = new CehResponseInitialEvent(id);
+    CehResponseInitialEventEntity entity = new CehResponseInitialEventEntity(id);
     assertThat(entity.getId().getCehInitialEventId()).isEqualTo("abc");
     assertThat(entity.getId().getSignalId()).isEqualTo(9L);
   }
