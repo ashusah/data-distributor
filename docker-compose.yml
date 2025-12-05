@@ -10,7 +10,7 @@ services:
     ports:
       - '1433:1433'
     volumes:
-      - ./docker/sqlserver/data:/var/opt/mssql
+      - sqlserver-data:/var/opt/mssql
     healthcheck:
       test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrong!Passw0rd", "-Q", "SELECT 1"]
       interval: 10s
@@ -59,3 +59,5 @@ services:
 networks:
   default:
     name: data-distributor-network
+volumes:
+  sqlserver-data:

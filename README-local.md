@@ -59,4 +59,31 @@ docker compose down
 docker volume prune
 ```
 
+<!-- mention no chown requirement -->
+> The SQL Server container now uses a Docker managed volume `sqlserver-data` instead of a bind mount, so you don’t need to set custom permissions manually.
+
+## Trigger the signal-export flow manually
+
+Once the stack is running (`docker compose ps` will show the app/container as healthy), you can submit a date for processing without writing any Java code. Just copy and run the curl commands below:
+
+1. **Fire a processing request**
+
+   ```bash
+   curl -i -X POST "http://localhost:8080/api/signal-events/process-async?date=2025-01-02"
+   ```
+
+   The `-i` flag prints response headers; look for the `Location` header (e.g., `/api/signal-events/jobs/{jobId}`) to get the generated job ID.
+
+2. **Poll the job status**
+
+   Replace `{jobId}` with the value from the `Location` header:
+
+   ```bash
+   curl "http://localhost:8080/api/signal-events/jobs/{jobId}"
+   ```
+
+   This returns JSON such as `{ "successCount":0,"failureCount":0,"pendingCount":0,"message":"Job accepted with id ..."}`
+
+Use these commands to verify the app can reach the dummy CEH endpoint and that audit records are written to the SQL seed data. No additional code changes are required.
+
 This local stack keeps production code untouched while making it easy to run the app + DB locally.
