@@ -1,8 +1,8 @@
 FROM maven:3.9.0-eclipse-temurin-17 AS builder
 WORKDIR /workspace
-COPY data-distributor/pom.xml ./
-COPY data-distributor/src ./src
-COPY data-distributor/appsettings ./appsettings
+COPY pom.xml ./
+COPY src ./src
+COPY appsettings ./appsettings
 RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:17-jre
