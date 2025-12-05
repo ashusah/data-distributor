@@ -32,7 +32,7 @@ public class DialSignalDataProviderScheduler {
     this.enabled = properties.getStorage().isDialSchedulerEnabled();
   }
 
-  @Scheduled(cron = "${data-distributor.scheduler.dial-signal-cron:0 0 6 * * *}")
+  @Scheduled(cron = "${data-distributor.scheduler.dial-signal-cron:0 0 6 * * *}", zone = "Europe/Amsterdam")
   public void runDialExport() {
     if (!enabled) {
       log.info("DialSignalDataProvider skipped because dialSchedulerEnabled=false");
