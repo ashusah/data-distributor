@@ -6,39 +6,55 @@ services:
     container_name: data-distributor-sqlserver
     environment:
       ACCEPT_EULA: 'Y'
-      SA_PASSWORD: 'Password1!'
+      SA_PASSWORD: 'P@ssw0rd'
       MSSQL_PID: 'Express'
     ports:
       - '1433:1433'
     volumes:
       - sqlserver-data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Password1! -Q \"SELECT 1\""]
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "P@ssw0rd", "-Q", "SELECT 1", "-C"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 10
-      start_period: 40s
+      start_period: 30s
     restart: unless-stopped
 
   init-db:
     image: mcr.microsoft.com/mssql-tools
     depends_on:
-      - sqlserver
+      sqlserver:
+        condition: service_healthy
+    environment:
+      SA_PASSWORD: 'P@ssw0rd'
     command: >
-      /bin/bash -c "sleep 20 && /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P Password1! -Q \"IF DB_ID(''data_distributor'') IS NULL CREATE DATABASE data_distributor;\""
+      /bin/bash -c '
+      echo "SQL Server is healthy, creating database...";
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "$$SA_PASSWORD" -Q "IF DB_ID('"'"'data_distributor'"'"') IS NULL CREATE DATABASE data_distributor;" -b;
+      if [ $$? -eq 0 ]; then
+        echo "Database created successfully";
+      else
+        echo "Failed to create database";
+        exit 1;
+      fi
+      '
     restart: "no"
 
   flyway:
     image: flyway/flyway:10
     depends_on:
-      - init-db
+      init-db:
+        condition: service_completed_successfully
     volumes:
       - ./docker/sqlserver/migration:/flyway/sql
     command: >
       -url=jdbc:sqlserver://sqlserver:1433;databaseName=data_distributor;encrypt=false;trustServerCertificate=true
       -user=sa
-      -password=Password1!
+      -password=P@ssw0rd
+      -connectRetries=10
+      -connectRetriesInterval=5
       migrate
+    restart: on-failure
 
   ceh:
     build:
@@ -47,7 +63,8 @@ services:
     ports:
       - '8081:5000'
     depends_on:
-      - flyway
+      flyway:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   app:
@@ -60,13 +77,17 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:sqlserver://sqlserver:1433;databaseName=data_distributor;encrypt=false;trustServerCertificate=true
       DB_USERNAME: sa
-      DB_PASSWORD: Password1!
+      DB_PASSWORD: P@ssw0rd
       iagPath: http://ceh:5000
       cehPath: /create-signal/write-signal
       DATA_DISTRIBUTOR_EXTERNAL_API_USE_BLOCKING_CLIENT: 'false'
     depends_on:
-      - flyway
-      - ceh
+      sqlserver:
+        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
+      ceh:
+        condition: service_started
     restart: unless-stopped
 
 networks:
