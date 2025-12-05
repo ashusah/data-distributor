@@ -24,6 +24,7 @@ The Compose file will:
 - Run Flyway (from `docker/sqlserver/migration/V1__init.sql`) to build the tables + insert five signals with four events each.
 - Build and start the dummy CEH service (`/create-signal/write-signal` returns random IDs).
 - Build the app image and run it with `SPRING_DATASOURCE_URL` pointing to the SQL Server and `iagPath` pointing to the CEH service inside the Docker network.
+- Document the SQL Server password (`P@ssw0rd`), the use of `/opt/mssql-tools18/bin/sqlcmd` in the healthcheck, and the fact that Flyway runs with retry/connect options in case the server isn’t immediately ready.
 
 The Spring app will be exposed on **http://localhost:8080** and the dummy CEH on **http://localhost:8081**.
 
