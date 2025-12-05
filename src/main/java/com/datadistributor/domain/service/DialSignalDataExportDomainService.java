@@ -65,7 +65,7 @@ public class DialSignalDataExportDomainService {
   private String toCsvRow(SignalEvent event) {
     Signal signal = signalQueryUseCase.getOpenSignalOfAgreement(event.getAgreementId())
         .orElseGet(() -> signalFallback(event));
-    AccountBalance account = accountBalanceOverviewPort.findByAgreementId(event.getAgreementId())
+    AccountBalance account = accountBalanceOverviewPort.getAccountBalanceOfAgreement(event.getAgreementId())
         .orElse(null);
 
     return String.join(",",

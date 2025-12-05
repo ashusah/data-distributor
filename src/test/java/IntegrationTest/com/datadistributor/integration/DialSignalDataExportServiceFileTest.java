@@ -110,7 +110,7 @@ class DialSignalDataExportServiceFileTest {
     }
 
     @Override
-    public java.util.Optional<AccountBalance> findByAgreementId(Long agreementId) {
+    public java.util.Optional<AccountBalance> getAccountBalanceOfAgreement(Long agreementId) {
       AccountBalance abo = new AccountBalance();
       abo.setAgreementId(agreementId);
       abo.setBcNumber(321L);

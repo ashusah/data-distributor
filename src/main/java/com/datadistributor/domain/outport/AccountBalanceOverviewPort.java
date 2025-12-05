@@ -10,5 +10,5 @@ public interface AccountBalanceOverviewPort {
 
   Optional<Long> findBcNumberByAgreementId(Long agreementId);
 
-  Optional<AccountBalance> findByAgreementId(Long agreementId);
+  Optional<AccountBalance> getAccountBalanceOfAgreement(Long agreementId);
 }

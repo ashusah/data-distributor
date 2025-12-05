@@ -41,7 +41,7 @@ class AccountBalanceOverviewRepositoryAdapterTest {
   }
 
   @Test
-  void findByAgreementId_mapsAllFields() {
+  void getAccountBalanceOfAgreement_mapsAllFields() {
     AccountBalanceJpaEntity entity = new AccountBalanceJpaEntity();
     entity.setAgreementId(1L);
     ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
@@ -59,7 +59,7 @@ class AccountBalanceOverviewRepositoryAdapterTest {
     entity.setBookDate(java.time.LocalDate.now());
     when(jpaRepository.findById(1L)).thenReturn(Optional.of(entity));
 
-    assertThat(adapter.findByAgreementId(1L))
+    assertThat(adapter.getAccountBalanceOfAgreement(1L))
         .get()
         .satisfies(abo -> {
           assertThat(abo.getAgreementId()).isEqualTo(1L);
@@ -73,7 +73,7 @@ class AccountBalanceOverviewRepositoryAdapterTest {
   }
 
   @Test
-  void findByAgreementId_returnsEmptyOnNull() {
-    assertThat(adapter.findByAgreementId(null)).isEmpty();
+  void getAccountBalanceOfAgreement_returnsEmptyOnNull() {
+    assertThat(adapter.getAccountBalanceOfAgreement(null)).isEmpty();
   }
 }

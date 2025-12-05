@@ -49,7 +49,7 @@ class AccountBalanceServiceTest {
   void returnsBalanceWhenPresent() {
     AccountBalance balance = new AccountBalance();
     balance.setAgreementId(1L);
-    when(port.findByAgreementId(1L)).thenReturn(Optional.of(balance));
+    when(port.getAccountBalanceOfAgreement(1L)).thenReturn(Optional.of(balance));
 
     assertThat(service.getAccountBalanceOfAgreement(1L)).containsSame(balance);
   }

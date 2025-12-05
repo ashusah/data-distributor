@@ -82,7 +82,7 @@ class DialSignalDataProviderSchedulerTest {
         }
 
         @Override
-        public java.util.Optional<AccountBalance> findByAgreementId(Long agreementId) {
+        public java.util.Optional<AccountBalance> getAccountBalanceOfAgreement(Long agreementId) {
           return java.util.Optional.empty();
         }
       };

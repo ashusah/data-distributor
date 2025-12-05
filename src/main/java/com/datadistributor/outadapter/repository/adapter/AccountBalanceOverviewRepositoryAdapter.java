@@ -28,7 +28,7 @@ public class AccountBalanceOverviewRepositoryAdapter implements AccountBalanceOv
   }
 
   @Override
-  public Optional<AccountBalance> findByAgreementId(Long agreementId) {
+  public Optional<AccountBalance> getAccountBalanceOfAgreement(Long agreementId) {
     if (agreementId == null) {
       return Optional.empty();
     }
