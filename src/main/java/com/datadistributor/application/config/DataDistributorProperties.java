@@ -96,6 +96,8 @@ public class DataDistributorProperties {
     private String dialFolder = "dial";
     private String dialFilePrefix = "dial-signal-data";
     private boolean dialSchedulerEnabled = true;
+    private String storageUrl;
+    private String managedIdentityClientId;
   }
 
   @Data

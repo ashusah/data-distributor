@@ -1,5 +1,7 @@
 package com.datadistributor.outadapter.report;
 
+import com.azure.identity.ManagedIdentityCredential;
+import com.azure.identity.ManagedIdentityCredentialBuilder;
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.outport.FileStoragePort;
 import java.util.Optional;
@@ -53,9 +55,28 @@ public class AzureBlobStorageClient implements FileStoragePort {
   }
 
   private BlobServiceClientAdapter buildClient(DataDistributorProperties.Storage storage) {
-    if (!storage.isEnabled()) return null;
-    if (!StringUtils.hasText(storage.getConnectionString())) return null;
-    return new DefaultBlobServiceClientAdapter(storage.getConnectionString());
+    if (!storage.isEnabled()) {
+      return null;
+    }
+    if (hasManagedIdentityConfig(storage)) {
+      return buildManagedIdentityClient(storage);
+    }
+    if (StringUtils.hasText(storage.getConnectionString())) {
+      return new DefaultBlobServiceClientAdapter(storage.getConnectionString());
+    }
+    return null;
+  }
+
+  private boolean hasManagedIdentityConfig(DataDistributorProperties.Storage storage) {
+    return StringUtils.hasText(storage.getStorageUrl())
+        && StringUtils.hasText(storage.getManagedIdentityClientId());
+  }
+
+  private BlobServiceClientAdapter buildManagedIdentityClient(DataDistributorProperties.Storage storage) {
+    ManagedIdentityCredential credential = new ManagedIdentityCredentialBuilder()
+        .clientId(storage.getManagedIdentityClientId())
+        .build();
+    return new DefaultBlobServiceClientAdapter(storage.getStorageUrl(), credential);
   }
 
   private String buildPath(String folder, String fileName) {
@@ -91,6 +112,13 @@ public class AzureBlobStorageClient implements FileStoragePort {
     DefaultBlobServiceClientAdapter(String connectionString) {
       this.delegate = new com.azure.storage.blob.BlobServiceClientBuilder()
           .connectionString(connectionString)
+          .buildClient();
+    }
+
+    DefaultBlobServiceClientAdapter(String endpoint, ManagedIdentityCredential credential) {
+      this.delegate = new com.azure.storage.blob.BlobServiceClientBuilder()
+          .endpoint(endpoint)
+          .credential(credential)
           .buildClient();
     }
 
