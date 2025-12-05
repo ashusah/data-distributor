@@ -1,3 +1,4 @@
 /target/
 .idea/
 docker/sqlserver/data/
+docker/logs/

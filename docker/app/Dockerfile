@@ -3,7 +3,7 @@ WORKDIR /workspace
 COPY pom.xml ./
 COPY src ./src
 COPY appsettings ./appsettings
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests spring-boot:repackage
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
