@@ -38,7 +38,6 @@ class SignalEventRepositoryAdapterTest {
   void setup() {
     MockitoAnnotations.openMocks(this);
     properties.getProcessing().setMinUnauthorizedDebitBalance(250);
-    properties.getProcessing().setBookDateLookbackDays(5);
     adapter = new SignalEventRepositoryAdapter(jpaRepository, mapper, properties);
   }
 
@@ -65,7 +64,7 @@ class SignalEventRepositoryAdapterTest {
   void getSignalEventsForCEH_appliesFilters() {
     LocalDate date = LocalDate.of(2024, 12, 3);
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
-    when(jpaRepository.findPageForCEH(any(), any(), eq(250L), eq(date.minusDays(5)), eq(PageRequest.of(1, 10))))
+    when(jpaRepository.findPageForCEH(any(), any(), eq(250L), eq(PageRequest.of(1, 10))))
         .thenReturn(List.of(entity));
     SignalEvent mapped = new SignalEvent();
     when(mapper.toDomainList(List.of(entity))).thenReturn(List.of(mapped));
@@ -78,7 +77,7 @@ class SignalEventRepositoryAdapterTest {
   @Test
   void countSignalEventsForCEH_usesLookback() {
     LocalDate date = LocalDate.of(2024, 12, 3);
-    when(jpaRepository.countEligibleForCEH(any(), any(), eq(250L), eq(date.minusDays(5))))
+    when(jpaRepository.countEligibleForCEH(any(), any(), eq(250L)))
         .thenReturn(7L);
 
     assertThat(adapter.countSignalEventsForCEH(date)).isEqualTo(7L);

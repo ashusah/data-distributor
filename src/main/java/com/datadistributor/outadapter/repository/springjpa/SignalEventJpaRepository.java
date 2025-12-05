@@ -26,27 +26,23 @@ public interface SignalEventJpaRepository extends JpaRepository<SignalEventJpaEn
         select e
         from SignalEventJpaEntity e
         where e.eventRecordDateTime between :start and :end
-          and (e.unauthorizedDebitBalance > :minUnauthorizedBalance
-               or e.bookDate = :bookDateTarget)
+          and e.unauthorizedDebitBalance >= :minUnauthorizedBalance
         order by e.uabsEventId asc
         """)
     List<SignalEventJpaEntity> findPageForCEH(@Param("start") LocalDateTime start,
                                               @Param("end") LocalDateTime end,
                                               @Param("minUnauthorizedBalance") long minUnauthorizedBalance,
-                                              @Param("bookDateTarget") LocalDate bookDateTarget,
                                               Pageable pageable);
 
     @Query("""
         select count(e)
         from SignalEventJpaEntity e
         where e.eventRecordDateTime between :start and :end
-          and (e.unauthorizedDebitBalance > :minUnauthorizedBalance
-               or e.bookDate = :bookDateTarget)
+          and e.unauthorizedDebitBalance >= :minUnauthorizedBalance
         """)
     long countEligibleForCEH(@Param("start") LocalDateTime start,
                              @Param("end") LocalDateTime end,
-                             @Param("minUnauthorizedBalance") long minUnauthorizedBalance,
-                             @Param("bookDateTarget") LocalDate bookDateTarget);
+                             @Param("minUnauthorizedBalance") long minUnauthorizedBalance);
 
     @Query("""
         select e

@@ -25,7 +25,6 @@ import org.springframework.stereotype.Repository;
 public class SignalEventRepositoryAdapter implements SignalEventPort {
 
     private final long minUnauthorizedDebitBalance;
-    private final int bookDateLookbackDays;
     private final SignalEventJpaRepository signalEventJpaRepository;
     private final SignalEventMapper signalEventMapper;
     public SignalEventRepositoryAdapter(SignalEventJpaRepository signalEventJpaRepository,
@@ -34,7 +33,6 @@ public class SignalEventRepositoryAdapter implements SignalEventPort {
         this.signalEventJpaRepository = signalEventJpaRepository;
         this.signalEventMapper = signalEventMapper;
         this.minUnauthorizedDebitBalance = properties.getProcessing().getMinUnauthorizedDebitBalance();
-        this.bookDateLookbackDays = properties.getProcessing().getBookDateLookbackDays();
     }
 
     @Override
@@ -49,9 +47,8 @@ public class SignalEventRepositoryAdapter implements SignalEventPort {
     public List<SignalEvent> getSignalEventsForCEH(LocalDate date, int page, int size) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(LocalTime.MAX);
-        LocalDate bookDateTarget = date.minusDays(bookDateLookbackDays);
         List<SignalEventJpaEntity> eventEntities = signalEventJpaRepository.findPageForCEH(
-            start, end, minUnauthorizedDebitBalance, bookDateTarget, PageRequest.of(page, size));
+            start, end, minUnauthorizedDebitBalance, PageRequest.of(page, size));
         return signalEventMapper.toDomainList(eventEntities);
     }
 
@@ -59,9 +56,8 @@ public class SignalEventRepositoryAdapter implements SignalEventPort {
     public long countSignalEventsForCEH(LocalDate date) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(LocalTime.MAX);
-        LocalDate bookDateTarget = date.minusDays(bookDateLookbackDays);
         return signalEventJpaRepository.countEligibleForCEH(
-            start, end, minUnauthorizedDebitBalance, bookDateTarget);
+            start, end, minUnauthorizedDebitBalance);
     }
 
     @Override
