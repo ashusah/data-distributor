@@ -37,7 +37,7 @@ The Spring app will be exposed on **http://localhost:8080** and the dummy CEH on
 After the stack is up, you can inspect the seeded data with `sqlcmd` (e.g., from inside the SQL Server container):
 
 ```bash
-docker exec -it data-distributor-sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd -d data_distributor -Q "SELECT TOP 5 signal_id, agreement_id, signal_start_date FROM signal ORDER BY signal_id"
+docker exec -it data-distributor-sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Password1! -d data_distributor -Q "SELECT TOP 5 signal_id, agreement_id, signal_start_date FROM signal ORDER BY signal_id"
 ```
 
 ## Trigger the app flow manually
