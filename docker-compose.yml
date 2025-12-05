@@ -47,13 +47,13 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./docker/sqlserver/migration:/flyway/sql
-    command: >
-      -url=jdbc:sqlserver://sqlserver:1433;databaseName=data_distributor;encrypt=false;trustServerCertificate=true
-      -user=sa
-      -password=P@ssw0rd
-      -connectRetries=10
-      -connectRetriesInterval=5
-      migrate
+    command:
+      - -url=jdbc:sqlserver://sqlserver:1433;databaseName=data_distributor;encrypt=false;trustServerCertificate=true
+      - -user=sa
+      - -password=P@ssw0rd
+      - -connectRetries=10
+      - -connectRetriesInterval=5
+      - migrate
     restart: on-failure
 
   ceh:

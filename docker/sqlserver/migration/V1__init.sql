@@ -1,12 +1,8 @@
-IF DB_ID('data_distributor') IS NULL
-BEGIN
-    CREATE DATABASE data_distributor;
-END
-GO
+-- V1__init.sql
+-- Flyway migration for data_distributor database
+-- Remove CREATE DATABASE and USE statements - they're handled by init-db and Flyway connection
 
-USE data_distributor;
-GO
-
+-- Drop tables if they exist (in reverse dependency order)
 IF OBJECT_ID('dbo.signal_events', 'U') IS NOT NULL
     DROP TABLE dbo.signal_events;
 GO
@@ -29,6 +25,7 @@ IF OBJECT_ID('dbo.product_risk_monitoring', 'U') IS NOT NULL
     DROP TABLE dbo.product_risk_monitoring;
 GO
 
+-- Create product_risk_monitoring table
 CREATE TABLE dbo.product_risk_monitoring (
     grv SMALLINT PRIMARY KEY,
     product_id SMALLINT NOT NULL,
@@ -46,6 +43,7 @@ VALUES
     (2, 102, 'USD', 'Y', 'Y', 'Y', 'Y');
 GO
 
+-- Create product_configuration table
 CREATE TABLE dbo.product_configuration (
     grv SMALLINT PRIMARY KEY,
     product_id SMALLINT NOT NULL,
@@ -62,6 +60,7 @@ VALUES
     (2, 102, 'Y', 'Y', 'Y', 'Y');
 GO
 
+-- Create account_balance_overview table
 CREATE TABLE dbo.account_balance_overview (
     agreement_id BIGINT PRIMARY KEY,
     grv SMALLINT NOT NULL,
@@ -87,6 +86,7 @@ VALUES
     (1005, 1, 'NL00TEST0123456791', 1, 20005, 'EUR', '2025-01-01', 900, '2025-01-01', 'Y');
 GO
 
+-- Create signal table
 CREATE TABLE dbo.signal (
     signal_id BIGINT NOT NULL,
     agreement_id BIGINT NOT NULL,
@@ -105,6 +105,7 @@ VALUES
     (5, 1005, '2025-01-01', '2025-01-04');
 GO
 
+-- Create signal_events table
 CREATE TABLE dbo.signal_events (
     uabs_event_id BIGINT IDENTITY(1,1) PRIMARY KEY,
     event_record_date_time DATETIME NOT NULL,
@@ -144,6 +145,7 @@ VALUES
     ('2025-01-04 13:00', 'OUT_OF_OVERLIMIT', 'OUT_OF_OVERLIMIT', 0, '2025-01-04', 1, 101, 1005, 5);
 GO
 
+-- Create signal_audit table
 CREATE TABLE dbo.signal_audit (
     audit_id BIGINT IDENTITY(1,1) PRIMARY KEY,
     signal_id BIGINT NOT NULL,
@@ -158,6 +160,7 @@ CREATE TABLE dbo.signal_audit (
 );
 GO
 
+-- Create ceh_response_initial_event_id table
 CREATE TABLE dbo.ceh_response_initial_event_id (
     ceh_initial_event_id VARCHAR(50) NOT NULL,
     signal_id BIGINT NOT NULL,
@@ -165,5 +168,6 @@ CREATE TABLE dbo.ceh_response_initial_event_id (
 );
 GO
 
+-- Create indexes
 CREATE INDEX IX_signal_events_agreement_id ON dbo.signal_events (agreement_id);
 GO
