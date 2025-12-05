@@ -27,6 +27,6 @@ public class AccountBalanceDomainService implements AccountBalanceUseCase {
     if (agreementId == null) {
       return Optional.empty();
     }
-    return port.findByAgreementId(agreementId);
+    return port.getAccountBalanceOfAgreement(agreementId);
   }
 }
