@@ -1,0 +1,242 @@
+[
+  {
+    "name": "DB_URL",
+    "value": "jdbc:sqlserver://localhost:1433;databaseName=apa;encrypt=false;trustServerCertificate=true",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DB_USERNAME",
+    "value": "sa",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DB_PASSWORD",
+    "value": "P@ssw0rd",
+    "slotSetting": "false"
+  },
+  {
+    "name": "iagPath",
+    "value": "http://localhost:8081",
+    "slotSetting": "false"
+  },
+  {
+    "name": "cehPath",
+    "value": "/create-signal/write-signal",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_EXTERNAL_API_PUBLISHER",
+    "value": "UABS",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_EXTERNAL_API_PUBLISHER_ID",
+    "value": "0bfe5670-457d-4872-a1f1-efe4db39f099",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_EXTERNAL_API_REQUEST_TIMEOUT_SECONDS",
+    "value": "15",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_EXTERNAL_API_USE_BLOCKING_CLIENT",
+    "value": "false",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_EXTERNAL_API_RETRY_ATTEMPTS",
+    "value": "3",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_EXTERNAL_API_RETRY_BACKOFF_SECONDS",
+    "value": "5",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_EXTERNAL_API_RETRY_MAX_BACKOFF_SECONDS",
+    "value": "15",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_PROCESSING_BATCH_SIZE",
+    "value": "300",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_PROCESSING_PAGE_SIZE",
+    "value": "1000",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_PROCESSING_RATE_LIMIT",
+    "value": "20",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_PROCESSING_MIN_UNAUTHORIZED_DEBIT_BALANCE",
+    "value": "250",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_PROCESSING_BOOK_DATE_LOOKBACK_DAYS",
+    "value": "5",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_AUDIT_CONSUMER_ID",
+    "value": "1",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_HTTP_CONNECT_TIMEOUT_MS",
+    "value": "10000",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_HTTP_RESPONSE_TIMEOUT_SECONDS",
+    "value": "10",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_HTTP_READ_TIMEOUT_SECONDS",
+    "value": "10",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_HTTP_WRITE_TIMEOUT_SECONDS",
+    "value": "10",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_STORAGE_ENABLED",
+    "value": "false",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_STORAGE_CONNECTION_STRING",
+    "value": "",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_STORAGE_CONTAINER",
+    "value": "reports",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_STORAGE_FOLDER",
+    "value": "ceh",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_STORAGE_DIAL_FOLDER",
+    "value": "dial",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_STORAGE_DIAL_FILE_PREFIX",
+    "value": "dial-signal-data",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_STORAGE_DIAL_SCHEDULER_ENABLED",
+    "value": "true",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_STORAGE_URL",
+    "value": "",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_STORAGE_MANAGED_IDENTITY_CLIENT_ID",
+    "value": "",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_SCHEDULER_ENABLE_2AM",
+    "value": "true",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_SCHEDULER_ENABLE_MON_10",
+    "value": "true",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_SCHEDULER_ENABLE_MON_12",
+    "value": "true",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_SCHEDULER_ENABLE_RETRY",
+    "value": "true",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_SCHEDULER_SIGNAL_2AM_CRON",
+    "value": "0 0 2 * * *",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_SCHEDULER_SIGNAL_MON_10_CRON",
+    "value": "0 0 10 * * MON",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_SCHEDULER_SIGNAL_MON_12_CRON",
+    "value": "0 0 12 * * MON",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_SCHEDULER_RETRY_CRON",
+    "value": "0 0 13-23 * * TUE,WED,THU,FRI,SAT,SUN",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_ASYNC_CORE_POOL_SIZE",
+    "value": "20",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_ASYNC_MAX_POOL_SIZE",
+    "value": "50",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_ASYNC_QUEUE_CAPACITY",
+    "value": "10000",
+    "slotSetting": "false"
+  },
+  {
+    "name": "DATA_DISTRIBUTOR_ASYNC_THREAD_NAME_PREFIX",
+    "value": "DataDistributor-",
+    "slotSetting": "false"
+  },
+  {
+    "name": "AZURE_KEYVAULT_ENABLED",
+    "value": "false",
+    "slotSetting": "false"
+  },
+  {
+    "name": "AZURE_KEYVAULT_VAULT_URL",
+    "value": "",
+    "slotSetting": "false"
+  },
+  {
+    "name": "AZURE_KEYVAULT_CERTIFICATE_NAME",
+    "value": "",
+    "slotSetting": "false"
+  },
+  {
+    "name": "AZURE_KEYVAULT_CERTIFICATE_PASSWORD",
+    "value": "",
+    "slotSetting": "false"
+  },
+  {
+    "name": "AZURE_KEYVAULT_CLIENT_ID",
+    "value": "",
+    "slotSetting": "false"
+  }
+]
