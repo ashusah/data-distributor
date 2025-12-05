@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datadistributor.application.DataDistributorApplication;
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
+import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
+import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
 import com.datadistributor.support.TestSignalDataSeeder;
 import com.datadistributor.outadapter.web.SignalEventFeignClient;
 import java.time.LocalDate;
@@ -34,13 +36,17 @@ class FeignFailureIntegrationTest {
   SignalAuditRepository auditRepo;
   @Autowired
   SignalEventJpaRepository eventRepo;
+  @Autowired
+  AccountBalanceJpaRepository accountRepo;
+  @Autowired
+  SignalJpaRepository signalJpaRepo;
   @MockBean
   SignalEventFeignClient feignClient;
   TestSignalDataSeeder seeder;
 
   @BeforeEach
   void setUp() {
-    seeder = new TestSignalDataSeeder(eventRepo, auditRepo);
+    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo);
     seeder.resetData();
     Mockito.when(feignClient.postSignalEvent(Mockito.any())).thenThrow(new IllegalStateException("Feign down"));
   }

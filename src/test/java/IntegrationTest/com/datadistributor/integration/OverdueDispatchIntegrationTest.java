@@ -4,8 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datadistributor.application.DataDistributorApplication;
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
+import com.datadistributor.outadapter.entity.AccountBalanceJpaEntity;
+import com.datadistributor.outadapter.entity.ProductRiskMonitoringJpaEntity;
 import com.datadistributor.outadapter.entity.SignalEventJpaEntity;
 import com.datadistributor.outadapter.entity.SignalJpaEntity;
+import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
@@ -31,6 +34,8 @@ class OverdueDispatchIntegrationTest {
   private SignalAuditRepository auditRepo;
   @Autowired
   private SignalJpaRepository signalRepo;
+  @Autowired
+  private AccountBalanceJpaRepository accountRepo;
 
   private final LocalDate startDate = LocalDate.of(2025, 12, 1);
 
@@ -39,6 +44,7 @@ class OverdueDispatchIntegrationTest {
     auditRepo.deleteAll();
     eventRepo.deleteAll();
     signalRepo.deleteAll();
+    accountRepo.deleteAll();
   }
 
   @Test
@@ -57,6 +63,7 @@ class OverdueDispatchIntegrationTest {
     event.setEventType("OVERLIMIT_SIGNAL");
     event.setUnauthorizedDebitBalance(10L);
     event.setBookDate(startDate);
+    createAccount(signal.getAgreementId());
     eventRepo.save(event);
 
     LocalDate processingDate = startDate.plusDays(5); // DPD6, no events on this date
@@ -64,5 +71,31 @@ class OverdueDispatchIntegrationTest {
 
     assertThat(auditRepo.findAll()).hasSize(1);
     assertThat(auditRepo.findAll().get(0).getUabsEventId()).isEqualTo(event.getUabsEventId());
+  }
+
+  private void createAccount(long agreementId) {
+    if (accountRepo.existsById(agreementId)) {
+      return;
+    }
+    AccountBalanceJpaEntity acct = new AccountBalanceJpaEntity();
+    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
+    prm.setGrv((short) 1);
+    prm.setProductId((short) 1);
+    prm.setCurrencyCode("EUR");
+    prm.setMonitorCW014Signal("Y");
+    prm.setMonitorKraandicht("Y");
+    prm.setReportCW014ToCEH("Y");
+    prm.setReportCW014ToDial("Y");
+    acct.setAgreementId(agreementId);
+    acct.setGrv(prm);
+    acct.setIban("DE1234567890123456");
+    acct.setLifeCycleStatus((short) 1);
+    acct.setBcNumber(agreementId);
+    acct.setCurrencyCode("EUR");
+    acct.setBookDate(LocalDate.now());
+    acct.setUnauthorizedDebitBalance(0L);
+    acct.setLastBookDateBalanceCrToDt(LocalDate.now());
+    acct.setIsAgreementPartOfAcbs("Y");
+    accountRepo.save(acct);
   }
 }

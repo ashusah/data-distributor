@@ -3,13 +3,15 @@ package com.datadistributor.integration;
 import com.datadistributor.application.DataDistributorApplication;
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
 import com.datadistributor.outadapter.entity.AccountBalanceJpaEntity;
+import com.datadistributor.outadapter.entity.ProductRiskMonitoringJpaEntity;
 import com.datadistributor.outadapter.entity.SignalAuditJpaEntity;
 import com.datadistributor.outadapter.entity.SignalEventJpaEntity;
-import com.datadistributor.outadapter.entity.ProductRiskMonitoringJpaEntity;
+import com.datadistributor.outadapter.entity.SignalJpaEntity;
 import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.CehResponseInitialEventRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
+import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
 import com.datadistributor.support.StubExternalApiConfig;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +37,8 @@ abstract class AbstractIntegrationTest {
   protected CehResponseInitialEventRepository cehInitRepo;
   @Autowired
   protected AccountBalanceJpaRepository accountRepo;
+  @Autowired
+  protected SignalJpaRepository signalJpaRepo;
 
   protected LocalDate targetDate;
 
@@ -50,7 +54,9 @@ abstract class AbstractIntegrationTest {
   protected SignalEventJpaEntity saveEvent(long signalId, long agreementId, LocalDateTime ts, String status) {
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
     entity.setSignalId(signalId);
+    ensureSignal(signalId, agreementId, ts.toLocalDate());
     entity.setAgreementId(agreementId);
+    ensureAccount(agreementId);
     entity.setEventRecordDateTime(ts);
     entity.setEventType("CONTRACT_UPDATE");
     entity.setEventStatus(status);
@@ -76,6 +82,9 @@ abstract class AbstractIntegrationTest {
   }
 
   protected void saveAccount(long agreementId, long bcNumber) {
+    if (accountRepo.existsById(agreementId)) {
+      return;
+    }
     AccountBalanceJpaEntity acct = new AccountBalanceJpaEntity();
     ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
     prm.setGrv((short) 1);
@@ -100,5 +109,24 @@ abstract class AbstractIntegrationTest {
 
   protected LocalDateTime at(LocalDate date, int hour) {
     return LocalDateTime.of(date, LocalTime.of(hour, 0));
+  }
+
+  private void ensureAccount(long agreementId) {
+    if (accountRepo.existsById(agreementId)) {
+      return;
+    }
+    saveAccount(agreementId, agreementId);
+  }
+
+  private void ensureSignal(long signalId, long agreementId, LocalDate startDate) {
+    if (signalJpaRepo.existsById(signalId)) {
+      return;
+    }
+    SignalJpaEntity signal = new SignalJpaEntity();
+    signal.setSignalId(signalId);
+    signal.setAgreementId(agreementId);
+    signal.setSignalStartDate(startDate);
+    signal.setSignalEndDate(startDate.plusDays(30));
+    signalJpaRepo.save(signal);
   }
 }

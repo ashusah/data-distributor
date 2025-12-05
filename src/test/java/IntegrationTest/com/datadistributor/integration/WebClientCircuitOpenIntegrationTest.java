@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datadistributor.application.DataDistributorApplication;
 import com.datadistributor.domain.inport.SignalEventProcessingUseCase;
+import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
+import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
 import com.datadistributor.support.TestSignalDataSeeder;
 import com.datadistributor.support.FailingWebClientStubConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -44,6 +46,10 @@ class WebClientCircuitOpenIntegrationTest {
   @Autowired
   SignalEventJpaRepository eventRepo;
   @Autowired
+  AccountBalanceJpaRepository accountRepo;
+  @Autowired
+  SignalJpaRepository signalJpaRepo;
+  @Autowired
   CircuitBreakerRegistry circuitBreakerRegistry;
   @Autowired
   AtomicInteger stubCallCount;
@@ -51,7 +57,7 @@ class WebClientCircuitOpenIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    seeder = new TestSignalDataSeeder(eventRepo, auditRepo);
+    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo);
     seeder.resetData();
     stubCallCount.set(0);
     circuitBreakerRegistry.circuitBreaker("signalEventApi").reset();

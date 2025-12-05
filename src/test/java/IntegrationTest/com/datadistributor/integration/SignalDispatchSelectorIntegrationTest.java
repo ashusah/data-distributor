@@ -98,6 +98,7 @@ class SignalDispatchSelectorIntegrationTest extends AbstractIntegrationTest {
                                                     LocalDateTime ts,
                                                     String status,
                                                     long balance) {
+    saveAccount(agreementId, agreementId);
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
     entity.setSignalId(signalId);
     entity.setAgreementId(agreementId);

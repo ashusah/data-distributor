@@ -3,8 +3,10 @@ package com.datadistributor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datadistributor.application.DataDistributorApplication;
-import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
+import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
+import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
+import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +31,12 @@ class SignalProcessingIntegrationTest {
   private SignalAuditRepository auditRepo;
 
   @Autowired
+  private AccountBalanceJpaRepository accountRepo;
+
+  @Autowired
+  private SignalJpaRepository signalJpaRepo;
+
+  @Autowired
   private SignalEventProcessingUseCase processingUseCase;
 
   private TestSignalDataSeeder dataSeeder;
@@ -37,7 +45,7 @@ class SignalProcessingIntegrationTest {
 
   @BeforeEach
   void setup() {
-    dataSeeder = new TestSignalDataSeeder(signalRepo, auditRepo);
+    dataSeeder = new TestSignalDataSeeder(signalRepo, auditRepo, accountRepo, signalJpaRepo);
     dataSeeder.resetData();
     testDate = LocalDate.now();
     expectedIds = dataSeeder.seedSignalEvents(testDate, 3);
