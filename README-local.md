@@ -15,7 +15,7 @@ This repository ships with a self-contained Docker stack that brings up:
 
 ```bash
 cd data-distributor
-docker compose up --build
+./docker/run-stack.sh
 ```
 
 The Compose file will:
@@ -33,6 +33,8 @@ The Spring app will be exposed on **http://localhost:8080** and the dummy CEH on
 - `account_balance_overview`: five agreements (1001–1005) referencing the GRVs.
 - `signal`: five signals spanning 1 Jan–4 Jan 2025.
 - `signal_events`: each signal has four events (`OVERLIMIT_SIGNAL`, `FINANCIAL_UPDATE`, `PRODUCT_SWAP`, `OUT_OF_OVERLIMIT`) with incremental timestamps.
+
+After `./docker/run-stack.sh` completes, the full `docker compose` log is saved as `docker/logs/compose-<timestamp>.log`; feel free to tail it if you need realtime output while the stack runs.
 
 After the stack is up, you can inspect the seeded data with `sqlcmd` (e.g., from inside the SQL Server container):
 
