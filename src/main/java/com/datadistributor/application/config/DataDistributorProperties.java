@@ -90,7 +90,6 @@ public class DataDistributorProperties {
   @Data
   public static class Storage {
     private boolean enabled = false;
-    private String connectionString;
     private String container = "reports";
     private String folder = "ceh";
     private String dialFolder = "dial";

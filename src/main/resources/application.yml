@@ -40,7 +40,6 @@ data-distributor:
     write-timeout-seconds: ${DATA_DISTRIBUTOR_HTTP_WRITE_TIMEOUT_SECONDS:10}
   storage:
     enabled: ${DATA_DISTRIBUTOR_STORAGE_ENABLED:false}
-    connection-string: ${DATA_DISTRIBUTOR_STORAGE_CONNECTION_STRING:}
     container: ${DATA_DISTRIBUTOR_STORAGE_CONTAINER:reports}
     folder: ${DATA_DISTRIBUTOR_STORAGE_FOLDER:ceh}
     dial-folder: ${DATA_DISTRIBUTOR_STORAGE_DIAL_FOLDER:dial}

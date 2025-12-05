@@ -115,11 +115,6 @@
     "slotSetting": "false"
   },
   {
-    "name": "DATA_DISTRIBUTOR_STORAGE_CONNECTION_STRING",
-    "value": "",
-    "slotSetting": "false"
-  },
-  {
     "name": "DATA_DISTRIBUTOR_STORAGE_CONTAINER",
     "value": "reports",
     "slotSetting": "false"

@@ -47,7 +47,7 @@ Key properties (application.yml / env):
 - `data-distributor.external-api.use-blocking-client` — `true` → Feign, `false` → WebClient.
 - `data-distributor.external-api.base-url` — CEH endpoint root.
 - `data-distributor.external-api.retry.*` — retry/backoff for WebClient path.
-- `data-distributor.storage.*` — Azure Blob toggles, connection string, container, folder.
+- `data-distributor.storage.*` — Azure Blob toggles, managed identity endpoint/client ID, container, folder.
 - `data-distributor.scheduler.*` — cron and enablement for main and retry schedulers.
 - `data-distributor.processing.prereq-check-enabled` — block new batches if prior day events are not PASS.
 - `data-distributor.azure.keyvault.*` — optional SSL context for Key Vault secrets.

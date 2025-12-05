@@ -61,9 +61,8 @@ public class AzureBlobStorageClient implements FileStoragePort {
     if (hasManagedIdentityConfig(storage)) {
       return buildManagedIdentityClient(storage);
     }
-    if (StringUtils.hasText(storage.getConnectionString())) {
-      return new DefaultBlobServiceClientAdapter(storage.getConnectionString());
-    }
+    log.warn("Managed identity configuration missing; storage uploads will be skipped (folder={}, container={})",
+        storage.getFolder(), storage.getContainer());
     return null;
   }
 
@@ -108,12 +107,6 @@ public class AzureBlobStorageClient implements FileStoragePort {
 
   static class DefaultBlobServiceClientAdapter implements BlobServiceClientAdapter {
     private final com.azure.storage.blob.BlobServiceClient delegate;
-
-    DefaultBlobServiceClientAdapter(String connectionString) {
-      this.delegate = new com.azure.storage.blob.BlobServiceClientBuilder()
-          .connectionString(connectionString)
-          .buildClient();
-    }
 
     DefaultBlobServiceClientAdapter(String endpoint, ManagedIdentityCredential credential) {
       this.delegate = new com.azure.storage.blob.BlobServiceClientBuilder()
