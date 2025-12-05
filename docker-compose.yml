@@ -1,0 +1,61 @@
+version: '3.9'
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: data-distributor-sqlserver
+    environment:
+      ACCEPT_EULA: 'Y'
+      SA_PASSWORD: 'YourStrong!Passw0rd'
+      MSSQL_PID: 'Express'
+    ports:
+      - '1433:1433'
+    volumes:
+      - ./docker/sqlserver/data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrong!Passw0rd", "-Q", "SELECT 1"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+  init-db:
+    image: mcr.microsoft.com/mssql-tools
+    depends_on:
+      - sqlserver
+    entrypoint: /bin/bash
+    command: -c "sleep 5 && /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P YourStrong!Passw0rd -Q \"IF DB_ID(''data_distributor'') IS NULL CREATE DATABASE data_distributor;\""
+    restart: 'no'
+  flyway:
+    image: flyway/flyway:9
+    depends_on:
+      - init-db
+    volumes:
+      - ./docker/sqlserver/migration:/flyway/sql
+    command: -url=jdbc:sqlserver://sqlserver:1433;databaseName=data_distributor;encrypt=false;trustServerCertificate=true -user=sa -password=YourStrong!Passw0rd migrate
+  ceh:
+    build:
+      context: ./docker/ceh
+    container_name: data-distributor-ceh
+    ports:
+      - '8081:5000'
+    depends_on:
+      - flyway
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    container_name: data-distributor-app
+    ports:
+      - '8080:8080'
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:sqlserver://sqlserver:1433;databaseName=data_distributor;encrypt=false;trustServerCertificate=true
+      DB_USERNAME: sa
+      DB_PASSWORD: YourStrong!Passw0rd
+      iagPath: http://ceh:5000
+      cehPath: /create-signal/write-signal
+      DATA_DISTRIBUTOR_EXTERNAL_API_USE_BLOCKING_CLIENT: 'false'
+    depends_on:
+      - flyway
+      - ceh
+
+networks:
+  default:
+    name: data-distributor-network
