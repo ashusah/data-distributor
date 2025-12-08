@@ -24,10 +24,16 @@ public class InitialCehMappingDomainService implements InitialCehMappingUseCase 
     if (!OVERLIMIT_STATUS.equalsIgnoreCase(event.getEventStatus())) {
       return;
     }
+    if (event.getSignalId() == null) {
+      return;
+    }
+    // Check if mapping already exists - if it does, skip (idempotent)
     if (initialCehMappingPort.findInitialCehId(event.getSignalId()).isPresent()) {
+      log.debug("Initial CEH mapping already exists for signalId={}, skipping", event.getSignalId());
       return;
     }
     try {
+      // saveInitialCehMapping is now idempotent and handles duplicates
       initialCehMappingPort.saveInitialCehMapping(event.getSignalId(), cehId);
       log.debug("Initial CEH mapping persisted for signalId={} cehId={}", event.getSignalId(), cehId);
     } catch (Exception ex) {

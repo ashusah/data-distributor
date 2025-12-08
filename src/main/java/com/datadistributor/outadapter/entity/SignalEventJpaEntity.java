@@ -2,6 +2,7 @@ package com.datadistributor.outadapter.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -31,18 +32,12 @@ public class SignalEventJpaEntity {
     @EqualsAndHashCode.Include
     private Long uabsEventId;
 
-    @Column(name = "signal_id")
-    private Long signalId;
-
-    @Column(name = "agreement_id")
-    private Long agreementId;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "signal_id", referencedColumnName = "signal_id", insertable = false, updatable = false)
+    @JoinColumn(name = "signal_id", referencedColumnName = "signal_id", nullable = false)
     private SignalJpaEntity signal;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agreement_id", referencedColumnName = "agreement_id", insertable = false, updatable = false)
+    @JoinColumn(name = "agreement_id", referencedColumnName = "agreement_id", nullable = false)
     private AccountBalanceJpaEntity accountBalance;
 
     @Column(name = "event_record_date_time")
@@ -60,8 +55,9 @@ public class SignalEventJpaEntity {
     @Column(name = "book_date")
     private LocalDate bookDate;
 
-    @Column(name = "grv")
-    private Short grv;
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JoinColumn(name = "grv", referencedColumnName = "grv", nullable = false)
+    private ProductRiskMonitoringJpaEntity grv;
 
     @Column(name = "product_id")
     private Short productId;

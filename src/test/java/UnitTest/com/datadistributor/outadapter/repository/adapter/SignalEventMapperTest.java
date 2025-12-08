@@ -2,7 +2,10 @@ package com.datadistributor.outadapter.repository.adapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.datadistributor.outadapter.entity.AccountBalanceJpaEntity;
+import com.datadistributor.outadapter.entity.ProductRiskMonitoringJpaEntity;
 import com.datadistributor.outadapter.entity.SignalEventJpaEntity;
+import com.datadistributor.outadapter.entity.SignalJpaEntity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,14 +25,29 @@ class SignalEventMapperTest {
   void toDomain_mapsFields() {
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
     entity.setUabsEventId(1L);
-    entity.setSignalId(2L);
-    entity.setAgreementId(3L);
+    
+    SignalJpaEntity signal = new SignalJpaEntity();
+    signal.setSignalId(2L);
+    entity.setSignal(signal);
+    
+    AccountBalanceJpaEntity account = new AccountBalanceJpaEntity();
+    account.setAgreementId(3L);
+    entity.setAccountBalance(account);
+    
     entity.setEventRecordDateTime(LocalDateTime.of(2024, 1, 1, 10, 0));
     entity.setEventType("TYPE");
     entity.setEventStatus("STATUS");
     entity.setUnauthorizedDebitBalance(10L);
     entity.setBookDate(LocalDate.of(2024, 1, 2));
-    entity.setGrv((short) 5);
+    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
+    prm.setGrv((short) 5);
+    prm.setProductId((short) 1);
+    prm.setCurrencyCode("EUR");
+    prm.setMonitorCW014Signal("Y");
+    prm.setMonitorKraandicht("Y");
+    prm.setReportCW014ToCEH("Y");
+    prm.setReportCW014ToDial("Y");
+    entity.setGrv(prm);
     entity.setProductId((short) 6);
 
     var domain = mapper.toDomain(entity);

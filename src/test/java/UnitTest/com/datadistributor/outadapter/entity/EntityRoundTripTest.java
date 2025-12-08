@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
+import com.datadistributor.outadapter.entity.AccountBalanceJpaEntity;
 import com.datadistributor.outadapter.entity.ProductRiskMonitoringJpaEntity;
+import com.datadistributor.outadapter.entity.SignalJpaEntity;
 
 class EntityRoundTripTest {
 
@@ -13,25 +15,40 @@ class EntityRoundTripTest {
   void signalEventJpaEntity_gettersAndSetters() {
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
     entity.setUabsEventId(1L);
-    entity.setSignalId(2L);
-    entity.setAgreementId(3L);
+    
+    SignalJpaEntity signal = new SignalJpaEntity();
+    signal.setSignalId(2L);
+    entity.setSignal(signal);
+    
+    AccountBalanceJpaEntity account = new AccountBalanceJpaEntity();
+    account.setAgreementId(3L);
+    entity.setAccountBalance(account);
+    
     entity.setEventRecordDateTime(LocalDateTime.of(2024, 1, 1, 1, 0));
     entity.setEventType("TYPE");
     entity.setEventStatus("STATUS");
     entity.setUnauthorizedDebitBalance(4L);
     entity.setBookDate(LocalDate.of(2024, 1, 2));
-    entity.setGrv((short) 5);
+    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
+    prm.setGrv((short) 5);
+    prm.setProductId((short) 1);
+    prm.setCurrencyCode("EUR");
+    prm.setMonitorCW014Signal("Y");
+    prm.setMonitorKraandicht("Y");
+    prm.setReportCW014ToCEH("Y");
+    prm.setReportCW014ToDial("Y");
+    entity.setGrv(prm);
     entity.setProductId((short) 6);
 
     assertThat(entity.getUabsEventId()).isEqualTo(1L);
-    assertThat(entity.getSignalId()).isEqualTo(2L);
-    assertThat(entity.getAgreementId()).isEqualTo(3L);
+    assertThat(entity.getSignal().getSignalId()).isEqualTo(2L);
+    assertThat(entity.getAccountBalance().getAgreementId()).isEqualTo(3L);
     assertThat(entity.getEventRecordDateTime()).isEqualTo(LocalDateTime.of(2024, 1, 1, 1, 0));
     assertThat(entity.getEventType()).isEqualTo("TYPE");
     assertThat(entity.getEventStatus()).isEqualTo("STATUS");
     assertThat(entity.getUnauthorizedDebitBalance()).isEqualTo(4L);
     assertThat(entity.getBookDate()).isEqualTo(LocalDate.of(2024, 1, 2));
-    assertThat(entity.getGrv()).isEqualTo((short) 5);
+    assertThat(entity.getGrv().getGrv()).isEqualTo((short) 5);
     assertThat(entity.getProductId()).isEqualTo((short) 6);
   }
 

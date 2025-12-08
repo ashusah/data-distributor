@@ -1,9 +1,7 @@
 package com.datadistributor.outadapter.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.time.LocalDate;
 import lombok.Data;
 
@@ -16,6 +14,7 @@ import lombok.Data;
 public class SignalJpaEntity {
 
   @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "signal_id")
   private Long signalId;
 

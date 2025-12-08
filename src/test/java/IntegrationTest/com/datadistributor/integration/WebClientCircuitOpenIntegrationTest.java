@@ -11,6 +11,7 @@ import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
 import com.datadistributor.support.TestSignalDataSeeder;
 import com.datadistributor.support.FailingWebClientStubConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,11 +54,13 @@ class WebClientCircuitOpenIntegrationTest {
   CircuitBreakerRegistry circuitBreakerRegistry;
   @Autowired
   AtomicInteger stubCallCount;
+  @Autowired
+  EntityManager entityManager;
   TestSignalDataSeeder seeder;
 
   @BeforeEach
   void setUp() {
-    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo);
+    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo, entityManager);
     seeder.resetData();
     stubCallCount.set(0);
     circuitBreakerRegistry.circuitBreaker("signalEventApi").reset();

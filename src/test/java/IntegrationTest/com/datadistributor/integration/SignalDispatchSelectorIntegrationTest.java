@@ -4,13 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.domain.inport.SignalDispatchSelectorUseCase;
+import com.datadistributor.outadapter.entity.AccountBalanceJpaEntity;
 import com.datadistributor.outadapter.entity.SignalEventJpaEntity;
 import com.datadistributor.outadapter.entity.SignalJpaEntity;
+import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -26,14 +27,16 @@ class SignalDispatchSelectorIntegrationTest extends AbstractIntegrationTest {
   private SignalJpaRepository signalRepo;
   @Autowired
   private SignalEventJpaRepository eventRepo;
+  @Autowired
+  private AccountBalanceJpaRepository accountRepo;
 
   private final LocalDate start = LocalDate.of(2025, 1, 1);
 
   @Test
   void breachThenFollowUpAfterInitialSent() {
-    long signalId = 1L;
     long agreementId = 10L;
-    saveSignal(signalId, agreementId, start, null);
+    SignalJpaEntity signal = saveSignal(1L, agreementId, start, null);
+    long signalId = signal.getSignalId();
     SignalEventJpaEntity dpd1 = saveEventWithBalance(signalId, agreementId, at(start, 8), "OVERLIMIT_SIGNAL", 10L);
     saveEventWithBalance(signalId, agreementId, at(start.plusDays(1), 8), "FINANCIAL_UPDATE", 250L);
     SignalEventJpaEntity dpd3 = saveEventWithBalance(signalId, agreementId, at(start.plusDays(2), 8), "FINANCIAL_UPDATE", 20L);
@@ -52,9 +55,9 @@ class SignalDispatchSelectorIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   void breachThenClosureSendsClosure() {
-    long signalId = 2L;
     long agreementId = 20L;
-    saveSignal(signalId, agreementId, start, start.plusDays(2));
+    SignalJpaEntity signal = saveSignal(2L, agreementId, start, start.plusDays(2));
+    long signalId = signal.getSignalId();
     SignalEventJpaEntity dpd1 = saveEventWithBalance(signalId, agreementId, at(start, 8), "OVERLIMIT_SIGNAL", 10L);
     saveEventWithBalance(signalId, agreementId, at(start.plusDays(1), 8), "FINANCIAL_UPDATE", 250L);
     SignalEventJpaEntity closure = saveEventWithBalance(signalId, agreementId, at(start.plusDays(2), 8), "OUT_OF_OVERLIMIT", 0L);
@@ -72,9 +75,9 @@ class SignalDispatchSelectorIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   void noBreachThenClosureSendsNothing() {
-    long signalId = 3L;
     long agreementId = 30L;
-    saveSignal(signalId, agreementId, start, start.plusDays(2));
+    SignalJpaEntity signal = saveSignal(3L, agreementId, start, start.plusDays(2));
+    long signalId = signal.getSignalId();
     saveEventWithBalance(signalId, agreementId, at(start, 8), "OVERLIMIT_SIGNAL", 10L);
     saveEventWithBalance(signalId, agreementId, at(start.plusDays(1), 8), "FINANCIAL_UPDATE", 249L);
     saveEventWithBalance(signalId, agreementId, at(start.plusDays(2), 8), "OUT_OF_OVERLIMIT", 0L);
@@ -85,12 +88,29 @@ class SignalDispatchSelectorIntegrationTest extends AbstractIntegrationTest {
   }
 
   private SignalJpaEntity saveSignal(long signalId, long agreementId, LocalDate startDate, LocalDate endDate) {
-    SignalJpaEntity signal = new SignalJpaEntity();
-    signal.setSignalId(signalId);
-    signal.setAgreementId(agreementId);
-    signal.setSignalStartDate(startDate);
-    signal.setSignalEndDate(endDate);
-    return signalRepo.save(signal);
+    // Since signalId is now auto-generated, we need to find existing signal or create new one
+    // For tests, we'll try to find by agreementId and startDate, or create new
+    SignalJpaEntity signal = signalRepo.findAll().stream()
+        .filter(s -> s.getAgreementId() != null && s.getAgreementId().equals(agreementId)
+            && s.getSignalStartDate() != null && s.getSignalStartDate().equals(startDate))
+        .findFirst()
+        .orElse(null);
+    
+    if (signal == null) {
+      signal = new SignalJpaEntity();
+      // Don't set signalId - it will be auto-generated
+      signal.setAgreementId(agreementId);
+      signal.setSignalStartDate(startDate);
+      signal.setSignalEndDate(endDate);
+      signal = signalRepo.save(signal);
+    } else {
+      // Update end date if provided
+      if (endDate != null) {
+        signal.setSignalEndDate(endDate);
+        signal = signalRepo.save(signal);
+      }
+    }
+    return signal;
   }
 
   private SignalEventJpaEntity saveEventWithBalance(long signalId,
@@ -98,16 +118,24 @@ class SignalDispatchSelectorIntegrationTest extends AbstractIntegrationTest {
                                                     LocalDateTime ts,
                                                     String status,
                                                     long balance) {
+    SignalJpaEntity signal = signalRepo.findById(signalId)
+        .orElseGet(() -> {
+          SignalJpaEntity newSignal = new SignalJpaEntity();
+          newSignal.setAgreementId(agreementId);
+          newSignal.setSignalStartDate(ts.toLocalDate());
+          return signalRepo.save(newSignal);
+        });
     saveAccount(agreementId, agreementId);
+    AccountBalanceJpaEntity account = accountRepo.findById(agreementId).orElseThrow();
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
-    entity.setSignalId(signalId);
-    entity.setAgreementId(agreementId);
+    entity.setSignal(signal);
+    entity.setAccountBalance(account);
     entity.setEventRecordDateTime(ts);
     entity.setEventStatus(status);
     entity.setEventType(status);
     entity.setUnauthorizedDebitBalance(balance);
     entity.setBookDate(ts.toLocalDate());
-    entity.setGrv((short) 1);
+    entity.setGrv(ensureProductRiskMonitoring((short) 1));
     entity.setProductId((short) 1);
     return eventRepo.save(entity);
   }

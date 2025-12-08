@@ -12,10 +12,10 @@ class PrerequisiteFlowIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   void batchAbortsWhenPriorAuditMissing() {
-    long signalId = 10_000L;
     long agreementId = 11_000L;
     saveAccount(agreementId, 900_001L);
-    saveEvent(signalId, agreementId, at(targetDate.minusDays(1), 1), "OVERLIMIT_SIGNAL");
+    SignalEventJpaEntity priorEvent = saveEvent(10_000L, agreementId, at(targetDate.minusDays(1), 1), "OVERLIMIT_SIGNAL");
+    long signalId = priorEvent.getSignal().getSignalId();
     saveEvent(signalId, agreementId, at(targetDate, 2), "OVERLIMIT_SIGNAL");
 
     var result = processingUseCase.processEventsForDate("it-prereq-missing", targetDate);
@@ -26,10 +26,10 @@ class PrerequisiteFlowIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   void batchProceedsWhenPriorAuditPasses() {
-    long signalId = 20_000L;
     long agreementId = 21_000L;
     saveAccount(agreementId, 900_002L);
-    SignalEventJpaEntity prior = saveEvent(signalId, agreementId, at(targetDate.minusDays(1), 1), "OVERLIMIT_SIGNAL");
+    SignalEventJpaEntity prior = saveEvent(20_000L, agreementId, at(targetDate.minusDays(1), 1), "OVERLIMIT_SIGNAL");
+    long signalId = prior.getSignal().getSignalId();
     saveAuditPass(prior);
     SignalEventJpaEntity current = saveEvent(signalId, agreementId, at(targetDate, 2), "OVERLIMIT_SIGNAL");
 
@@ -44,10 +44,10 @@ class PrerequisiteFlowIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   void batchAbortsWhenLatestPriorAuditIsFailAfterRetries() {
-    long signalId = 30_000L;
     long agreementId = 31_000L;
     saveAccount(agreementId, 900_003L);
-    SignalEventJpaEntity prior = saveEvent(signalId, agreementId, at(targetDate.minusDays(1), 1), "OVERLIMIT_SIGNAL");
+    SignalEventJpaEntity prior = saveEvent(30_000L, agreementId, at(targetDate.minusDays(1), 1), "OVERLIMIT_SIGNAL");
+    long signalId = prior.getSignal().getSignalId();
     // multiple audit attempts, last one FAIL -> should block today
     saveAudit(prior, "FAIL", "500");
     saveAudit(prior, "FAIL", "500");
@@ -62,10 +62,10 @@ class PrerequisiteFlowIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   void batchProceedsWhenFinalPriorAuditIsPassAfterFails() {
-    long signalId = 40_000L;
     long agreementId = 41_000L;
     saveAccount(agreementId, 900_004L);
-    SignalEventJpaEntity prior = saveEvent(signalId, agreementId, at(targetDate.minusDays(1), 1), "OVERLIMIT_SIGNAL");
+    SignalEventJpaEntity prior = saveEvent(40_000L, agreementId, at(targetDate.minusDays(1), 1), "OVERLIMIT_SIGNAL");
+    long signalId = prior.getSignal().getSignalId();
     // earlier failures, then a final PASS -> should allow today
     saveAudit(prior, "FAIL", "500");
     saveAudit(prior, "FAIL", "500");
@@ -83,8 +83,8 @@ class PrerequisiteFlowIntegrationTest extends AbstractIntegrationTest {
   private void saveAudit(SignalEventJpaEntity event, String status, String code) {
     SignalAuditJpaEntity audit = new SignalAuditJpaEntity();
     audit.setAuditRecordDateTime(LocalDateTime.now());
-    audit.setAgreementId(event.getAgreementId());
-    audit.setSignalId(event.getSignalId());
+    audit.setAgreementId(event.getAccountBalance().getAgreementId());
+    audit.setSignalId(event.getSignal().getSignalId());
     audit.setUabsEventId(event.getUabsEventId());
     audit.setConsumerId(1L);
     audit.setUnauthorizedDebitBalance(event.getUnauthorizedDebitBalance());

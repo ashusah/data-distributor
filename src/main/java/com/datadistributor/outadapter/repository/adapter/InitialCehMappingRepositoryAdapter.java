@@ -20,11 +20,34 @@ public class InitialCehMappingRepositoryAdapter implements InitialCehMappingPort
 
   @Override
   public void saveInitialCehMapping(Long signalId, long cehId) {
-    CehResponseInitialEventId id = new CehResponseInitialEventId(
-        String.valueOf(cehId),
-        signalId);
-    CehResponseInitialEventEntity initial = new CehResponseInitialEventEntity(id);
-    cehResponseInitialEventRepository.save(initial);
+    // Delete all existing mappings for this signalId to prevent duplicates
+    // (there should only be one mapping per signalId, but the composite key allows multiple)
+    java.util.List<CehResponseInitialEventEntity> existing = cehResponseInitialEventRepository
+        .findByIdSignalId(signalId);
+    
+    if (!existing.isEmpty()) {
+      // Check if any existing mapping has the same cehId
+      boolean hasSameCehId = existing.stream()
+          .anyMatch(e -> String.valueOf(cehId).equals(e.getId().getCehInitialEventId()));
+      
+      if (!hasSameCehId) {
+        // Delete all existing and create new with the new cehId
+        cehResponseInitialEventRepository.deleteAll(existing);
+        CehResponseInitialEventId newId = new CehResponseInitialEventId(
+            String.valueOf(cehId),
+            signalId);
+        CehResponseInitialEventEntity initial = new CehResponseInitialEventEntity(newId);
+        cehResponseInitialEventRepository.save(initial);
+      }
+      // If same cehId already exists, do nothing
+    } else {
+      // Create new mapping
+      CehResponseInitialEventId id = new CehResponseInitialEventId(
+          String.valueOf(cehId),
+          signalId);
+      CehResponseInitialEventEntity initial = new CehResponseInitialEventEntity(id);
+      cehResponseInitialEventRepository.save(initial);
+    }
   }
 
   @Override

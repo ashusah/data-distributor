@@ -8,6 +8,7 @@ import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepo
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -23,15 +24,18 @@ public class TestSignalDataSeeder {
   private final SignalAuditRepository auditRepo;
   private final AccountBalanceJpaRepository accountRepo;
   private final SignalJpaRepository signalJpaRepo;
+  private final EntityManager entityManager;
 
   public TestSignalDataSeeder(SignalEventJpaRepository signalRepo,
       SignalAuditRepository auditRepo,
       AccountBalanceJpaRepository accountRepo,
-      SignalJpaRepository signalJpaRepo) {
+      SignalJpaRepository signalJpaRepo,
+      EntityManager entityManager) {
     this.signalRepo = signalRepo;
     this.auditRepo = auditRepo;
     this.accountRepo = accountRepo;
     this.signalJpaRepo = signalJpaRepo;
+    this.entityManager = entityManager;
   }
 
   public void resetData() {
@@ -43,18 +47,17 @@ public class TestSignalDataSeeder {
     List<Long> ids = new ArrayList<>();
     for (long i = 1; i <= count; i++) {
       long agreementId = 3000L + i;
-      long signalId = 2000L + i;
-      ensureAccount(agreementId);
-      ensureSignal(signalId, agreementId, date.minusDays(5));
+      AccountBalanceJpaEntity account = ensureAccount(agreementId);
+      SignalJpaEntity signal = ensureSignal(2000L + i, agreementId, date.minusDays(5));
       SignalEventJpaEntity entity = new SignalEventJpaEntity();
-      entity.setSignalId(signalId);
-      entity.setAgreementId(agreementId);
+      entity.setSignal(signal);
+      entity.setAccountBalance(account);
       entity.setEventRecordDateTime(LocalDateTime.of(date, LocalTime.of(1, 0)));
       entity.setEventType("CONTRACT_UPDATE");
       entity.setEventStatus("OVERLIMIT_SIGNAL");
       entity.setUnauthorizedDebitBalance(300L);
       entity.setBookDate(date.minusDays(5));
-      entity.setGrv((short) 1);
+      entity.setGrv(ensureProductRiskMonitoring((short) 1));
       entity.setProductId((short) 1);
       SignalEventJpaEntity saved = signalRepo.save(entity);
       ids.add(saved.getUabsEventId());
@@ -62,41 +65,56 @@ public class TestSignalDataSeeder {
     return ids;
   }
 
-  private void ensureAccount(long agreementId) {
+  private AccountBalanceJpaEntity ensureAccount(long agreementId) {
     if (accountRepo.existsById(agreementId)) {
-      return;
+      return accountRepo.findById(agreementId).orElseThrow();
     }
     AccountBalanceJpaEntity acct = new AccountBalanceJpaEntity();
-    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
-    prm.setGrv((short) 1);
-    prm.setProductId((short) 1);
-    prm.setCurrencyCode("EUR");
-    prm.setMonitorCW014Signal("Y");
-    prm.setMonitorKraandicht("Y");
-    prm.setReportCW014ToCEH("Y");
-    prm.setReportCW014ToDial("Y");
     acct.setAgreementId(agreementId);
     acct.setCurrencyCode("EUR");
     acct.setBcNumber(agreementId);
     acct.setBookDate(LocalDate.now());
-    acct.setGrv(prm);
+    acct.setGrv(ensureProductRiskMonitoring((short) 1));
     acct.setIban("DE1234567890123456");
     acct.setLifeCycleStatus((short) 1);
     acct.setUnauthorizedDebitBalance(0L);
     acct.setLastBookDateBalanceCrToDt(LocalDate.now());
     acct.setIsAgreementPartOfAcbs("Y");
     accountRepo.save(acct);
+    return acct;
   }
 
-  private void ensureSignal(long signalId, long agreementId, LocalDate start) {
-    if (signalJpaRepo.existsById(signalId)) {
-      return;
+  private SignalJpaEntity ensureSignal(long signalId, long agreementId, LocalDate start) {
+    // Since signalId is now auto-generated, find by agreementId and startDate
+    SignalJpaEntity existing = signalJpaRepo.findAll().stream()
+        .filter(s -> s.getAgreementId() != null && s.getAgreementId().equals(agreementId)
+            && s.getSignalStartDate() != null && s.getSignalStartDate().equals(start))
+        .findFirst()
+        .orElse(null);
+    
+    if (existing != null) {
+      return existing;
     }
+    
     SignalJpaEntity signal = new SignalJpaEntity();
-    signal.setSignalId(signalId);
+    // Don't set signalId - it will be auto-generated
     signal.setAgreementId(agreementId);
     signal.setSignalStartDate(start);
     signal.setSignalEndDate(start.plusDays(30));
-    signalJpaRepo.save(signal);
+    signal = signalJpaRepo.save(signal);
+    return signal;
+  }
+
+  private ProductRiskMonitoringJpaEntity ensureProductRiskMonitoring(short grv) {
+    // Create entity - MERGE cascade will handle it (persist if new, merge if existing)
+    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
+    prm.setGrv(grv);
+    prm.setProductId((short) 1);
+    prm.setCurrencyCode("EUR");
+    prm.setMonitorCW014Signal("Y");
+    prm.setMonitorKraandicht("Y");
+    prm.setReportCW014ToCEH("Y");
+    prm.setReportCW014ToDial("Y");
+    return prm;
   }
 }

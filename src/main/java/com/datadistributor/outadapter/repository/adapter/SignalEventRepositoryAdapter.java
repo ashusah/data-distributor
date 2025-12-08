@@ -78,9 +78,12 @@ public class SignalEventRepositoryAdapter implements SignalEventPort {
         if (signalId == null) {
             return Optional.empty();
         }
-        return signalEventJpaRepository.findFirstBySignalIdAndEventStatusOrderByEventRecordDateTimeAsc(
-                signalId, "OVERLIMIT_SIGNAL")
-            .map(signalEventMapper::toDomain);
+        List<SignalEventJpaEntity> results = signalEventJpaRepository.findBySignalIdAndEventStatusOrderByEventRecordDateTimeAsc(
+                signalId, "OVERLIMIT_SIGNAL");
+        if (results.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(signalEventMapper.toDomain(results.get(0)));
     }
 
     @Override

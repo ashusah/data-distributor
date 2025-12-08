@@ -7,6 +7,7 @@ import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepo
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,13 +40,16 @@ class SignalProcessingIntegrationTest {
   @Autowired
   private SignalEventProcessingUseCase processingUseCase;
 
+  @Autowired
+  private EntityManager entityManager;
+
   private TestSignalDataSeeder dataSeeder;
   private LocalDate testDate;
   private List<Long> expectedIds;
 
   @BeforeEach
   void setup() {
-    dataSeeder = new TestSignalDataSeeder(signalRepo, auditRepo, accountRepo, signalJpaRepo);
+    dataSeeder = new TestSignalDataSeeder(signalRepo, auditRepo, accountRepo, signalJpaRepo, entityManager);
     dataSeeder.resetData();
     testDate = LocalDate.now();
     expectedIds = dataSeeder.seedSignalEvents(testDate, 3);

@@ -10,6 +10,7 @@ import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaReposit
 import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
 import com.datadistributor.support.TestSignalDataSeeder;
 import com.datadistributor.outadapter.web.SignalEventFeignClient;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,11 +43,13 @@ class FeignFailureIntegrationTest {
   SignalJpaRepository signalJpaRepo;
   @MockBean
   SignalEventFeignClient feignClient;
+  @Autowired
+  EntityManager entityManager;
   TestSignalDataSeeder seeder;
 
   @BeforeEach
   void setUp() {
-    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo);
+    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo, entityManager);
     seeder.resetData();
     Mockito.when(feignClient.postSignalEvent(Mockito.any())).thenThrow(new IllegalStateException("Feign down"));
   }

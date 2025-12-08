@@ -13,6 +13,7 @@ import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
 import com.datadistributor.support.StubExternalApiConfig;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -39,6 +40,8 @@ abstract class AbstractIntegrationTest {
   protected AccountBalanceJpaRepository accountRepo;
   @Autowired
   protected SignalJpaRepository signalJpaRepo;
+  @Autowired
+  protected EntityManager entityManager;
 
   protected LocalDate targetDate;
 
@@ -47,22 +50,23 @@ abstract class AbstractIntegrationTest {
     auditRepo.deleteAll();
     cehInitRepo.deleteAll();
     signalRepo.deleteAll();
+    signalJpaRepo.deleteAll();
     accountRepo.deleteAll();
     targetDate = LocalDate.now();
   }
 
   protected SignalEventJpaEntity saveEvent(long signalId, long agreementId, LocalDateTime ts, String status) {
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
-    entity.setSignalId(signalId);
-    ensureSignal(signalId, agreementId, ts.toLocalDate());
-    entity.setAgreementId(agreementId);
-    ensureAccount(agreementId);
+    SignalJpaEntity signal = ensureSignal(signalId, agreementId, ts.toLocalDate());
+    entity.setSignal(signal);
+    AccountBalanceJpaEntity account = ensureAccount(agreementId);
+    entity.setAccountBalance(account);
     entity.setEventRecordDateTime(ts);
     entity.setEventType("CONTRACT_UPDATE");
     entity.setEventStatus(status);
     entity.setUnauthorizedDebitBalance(500L);
     entity.setBookDate(ts.toLocalDate().minusDays(5));
-    entity.setGrv((short) 1);
+    entity.setGrv(ensureProductRiskMonitoring((short) 1));
     entity.setProductId((short) 1);
     return signalRepo.save(entity);
   }
@@ -70,8 +74,8 @@ abstract class AbstractIntegrationTest {
   protected void saveAuditPass(SignalEventJpaEntity event) {
     SignalAuditJpaEntity audit = new SignalAuditJpaEntity();
     audit.setAuditRecordDateTime(LocalDateTime.now());
-    audit.setAgreementId(event.getAgreementId());
-    audit.setSignalId(event.getSignalId());
+    audit.setAgreementId(event.getAccountBalance().getAgreementId());
+    audit.setSignalId(event.getSignal().getSignalId());
     audit.setUabsEventId(event.getUabsEventId());
     audit.setConsumerId(1L);
     audit.setUnauthorizedDebitBalance(event.getUnauthorizedDebitBalance());
@@ -86,16 +90,8 @@ abstract class AbstractIntegrationTest {
       return;
     }
     AccountBalanceJpaEntity acct = new AccountBalanceJpaEntity();
-    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
-    prm.setGrv((short) 1);
-    prm.setProductId((short) 1);
-    prm.setCurrencyCode("EUR");
-    prm.setMonitorCW014Signal("Y");
-    prm.setMonitorKraandicht("Y");
-    prm.setReportCW014ToCEH("Y");
-    prm.setReportCW014ToDial("Y");
     acct.setAgreementId(agreementId);
-    acct.setGrv(prm);
+    acct.setGrv(ensureProductRiskMonitoring((short) 1));
     acct.setIban("DE1234567890123456");
     acct.setLifeCycleStatus((short) 1);
     acct.setBcNumber(bcNumber);
@@ -111,22 +107,56 @@ abstract class AbstractIntegrationTest {
     return LocalDateTime.of(date, LocalTime.of(hour, 0));
   }
 
-  private void ensureAccount(long agreementId) {
+  private AccountBalanceJpaEntity ensureAccount(long agreementId) {
     if (accountRepo.existsById(agreementId)) {
-      return;
+      return accountRepo.findById(agreementId).orElseThrow();
     }
     saveAccount(agreementId, agreementId);
+    return accountRepo.findById(agreementId).orElseThrow();
   }
 
-  private void ensureSignal(long signalId, long agreementId, LocalDate startDate) {
-    if (signalJpaRepo.existsById(signalId)) {
-      return;
+  private SignalJpaEntity ensureSignal(long signalId, long agreementId, LocalDate startDate) {
+    // First, try to find by signalId if it exists in the database
+    // This handles the case where we want to reuse an existing signal (e.g., from a previous event)
+    SignalJpaEntity byId = signalJpaRepo.findById(signalId).orElse(null);
+    if (byId != null) {
+      return byId;
     }
+    
+    // If signalId not found, look for existing signal by agreementId
+    // For tests creating events on the same signal but different dates, we want to reuse the signal
+    // So we look for any signal with the same agreementId, regardless of startDate
+    SignalJpaEntity existing = signalJpaRepo.findAll().stream()
+        .filter(s -> s.getAgreementId() != null && s.getAgreementId().equals(agreementId))
+        .findFirst()
+        .orElse(null);
+    
+    if (existing != null) {
+      // Refresh to get latest state and avoid optimistic locking issues
+      signalJpaRepo.flush();
+      return signalJpaRepo.findById(existing.getSignalId()).orElse(existing);
+    }
+    
+    // Create new signal if none exists
     SignalJpaEntity signal = new SignalJpaEntity();
-    signal.setSignalId(signalId);
+    // Don't set signalId - it will be auto-generated
     signal.setAgreementId(agreementId);
     signal.setSignalStartDate(startDate);
     signal.setSignalEndDate(startDate.plusDays(30));
-    signalJpaRepo.save(signal);
+    signal = signalJpaRepo.saveAndFlush(signal);
+    return signal;
+  }
+
+  protected ProductRiskMonitoringJpaEntity ensureProductRiskMonitoring(short grv) {
+    // Create entity - MERGE cascade will handle it (persist if new, merge if existing)
+    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
+    prm.setGrv(grv);
+    prm.setProductId((short) 1);
+    prm.setCurrencyCode("EUR");
+    prm.setMonitorCW014Signal("Y");
+    prm.setMonitorKraandicht("Y");
+    prm.setReportCW014ToCEH("Y");
+    prm.setReportCW014ToDial("Y");
+    return prm;
   }
 }

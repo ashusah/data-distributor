@@ -12,6 +12,7 @@ import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepo
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -36,6 +37,8 @@ class OverdueDispatchIntegrationTest {
   private SignalJpaRepository signalRepo;
   @Autowired
   private AccountBalanceJpaRepository accountRepo;
+  @Autowired
+  private EntityManager entityManager;
 
   private final LocalDate startDate = LocalDate.of(2025, 12, 1);
 
@@ -50,20 +53,22 @@ class OverdueDispatchIntegrationTest {
   @Test
   void sendsEarliestOverlimitWhenDpdExceedsThresholdEvenWithoutTodayEvent() {
     SignalJpaEntity signal = new SignalJpaEntity();
-    signal.setSignalId(900L);
+    // Don't set signalId - it will be auto-generated
     signal.setAgreementId(800L);
     signal.setSignalStartDate(startDate);
-    signalRepo.save(signal);
+    signal = signalRepo.save(signal);
 
+    AccountBalanceJpaEntity account = createAccount(signal.getAgreementId());
     SignalEventJpaEntity event = new SignalEventJpaEntity();
-    event.setSignalId(signal.getSignalId());
-    event.setAgreementId(signal.getAgreementId());
+    event.setSignal(signal);
+    event.setAccountBalance(account);
     event.setEventRecordDateTime(LocalDateTime.of(startDate, LocalTime.of(8, 0)));
     event.setEventStatus("OVERLIMIT_SIGNAL");
     event.setEventType("OVERLIMIT_SIGNAL");
     event.setUnauthorizedDebitBalance(10L);
     event.setBookDate(startDate);
-    createAccount(signal.getAgreementId());
+    event.setGrv(ensureProductRiskMonitoring((short) 1));
+    event.setProductId((short) 1);
     eventRepo.save(event);
 
     LocalDate processingDate = startDate.plusDays(5); // DPD6, no events on this date
@@ -73,21 +78,13 @@ class OverdueDispatchIntegrationTest {
     assertThat(auditRepo.findAll().get(0).getUabsEventId()).isEqualTo(event.getUabsEventId());
   }
 
-  private void createAccount(long agreementId) {
+  private AccountBalanceJpaEntity createAccount(long agreementId) {
     if (accountRepo.existsById(agreementId)) {
-      return;
+      return accountRepo.findById(agreementId).orElseThrow();
     }
     AccountBalanceJpaEntity acct = new AccountBalanceJpaEntity();
-    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
-    prm.setGrv((short) 1);
-    prm.setProductId((short) 1);
-    prm.setCurrencyCode("EUR");
-    prm.setMonitorCW014Signal("Y");
-    prm.setMonitorKraandicht("Y");
-    prm.setReportCW014ToCEH("Y");
-    prm.setReportCW014ToDial("Y");
     acct.setAgreementId(agreementId);
-    acct.setGrv(prm);
+    acct.setGrv(ensureProductRiskMonitoring((short) 1));
     acct.setIban("DE1234567890123456");
     acct.setLifeCycleStatus((short) 1);
     acct.setBcNumber(agreementId);
@@ -97,5 +94,19 @@ class OverdueDispatchIntegrationTest {
     acct.setLastBookDateBalanceCrToDt(LocalDate.now());
     acct.setIsAgreementPartOfAcbs("Y");
     accountRepo.save(acct);
+    return acct;
+  }
+
+  private ProductRiskMonitoringJpaEntity ensureProductRiskMonitoring(short grv) {
+    // Create entity - MERGE cascade will handle it (persist if new, merge if existing)
+    ProductRiskMonitoringJpaEntity prm = new ProductRiskMonitoringJpaEntity();
+    prm.setGrv(grv);
+    prm.setProductId((short) 1);
+    prm.setCurrencyCode("EUR");
+    prm.setMonitorCW014Signal("Y");
+    prm.setMonitorKraandicht("Y");
+    prm.setReportCW014ToCEH("Y");
+    prm.setReportCW014ToDial("Y");
+    return prm;
   }
 }

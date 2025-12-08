@@ -22,7 +22,7 @@ public class AccountBalanceJpaEntity {
   @Column(name = "agreement_id", nullable = false)
   private Long agreementId;
 
-  @ManyToOne(cascade = CascadeType.ALL)
+  @ManyToOne(cascade = CascadeType.MERGE)
   @JoinColumn(name = "grv", referencedColumnName = "grv", nullable = false)
   private ProductRiskMonitoringJpaEntity grv;
 

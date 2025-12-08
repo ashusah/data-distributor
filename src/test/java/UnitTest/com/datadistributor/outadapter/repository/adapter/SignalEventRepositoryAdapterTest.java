@@ -71,6 +71,12 @@ class SignalEventRepositoryAdapterTest {
 
     List<SignalEvent> result = adapter.getSignalEventsForCEH(date, 1, 10);
 
+    // Verify the query is called with correct parameters
+    ArgumentCaptor<LocalDateTime> start = ArgumentCaptor.forClass(LocalDateTime.class);
+    ArgumentCaptor<LocalDateTime> end = ArgumentCaptor.forClass(LocalDateTime.class);
+    verify(jpaRepository).findPageForCEH(start.capture(), end.capture(), eq(250L), eq(PageRequest.of(1, 10)));
+    assertThat(start.getValue()).isEqualTo(date.atStartOfDay());
+    assertThat(end.getValue()).isEqualTo(date.atTime(LocalTime.MAX));
     assertThat(result).containsExactly(mapped);
   }
 
@@ -109,8 +115,8 @@ class SignalEventRepositoryAdapterTest {
   @Test
   void getEarliestOverlimitEvent_mapsResult() {
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
-    when(jpaRepository.findFirstBySignalIdAndEventStatusOrderByEventRecordDateTimeAsc(10L, "OVERLIMIT_SIGNAL"))
-        .thenReturn(Optional.of(entity));
+    when(jpaRepository.findBySignalIdAndEventStatusOrderByEventRecordDateTimeAsc(10L, "OVERLIMIT_SIGNAL"))
+        .thenReturn(List.of(entity));
     SignalEvent mapped = new SignalEvent();
     when(mapper.toDomain(entity)).thenReturn(mapped);
 

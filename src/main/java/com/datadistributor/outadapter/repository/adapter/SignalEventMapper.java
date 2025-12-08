@@ -13,8 +13,9 @@ import org.mapstruct.ReportingPolicy;
 )
 public interface SignalEventMapper {
 
-    @Mapping(source = "signalId", target = "signalId")
-    @Mapping(source = "agreementId", target = "agreementId")
+    @Mapping(source = "signal.signalId", target = "signalId")
+    @Mapping(source = "accountBalance.agreementId", target = "agreementId")
+    @Mapping(target = "grv", source = "grv.grv")
     SignalEvent toDomain(SignalEventJpaEntity entity);
 
     List<SignalEvent> toDomainList(List<SignalEventJpaEntity> entities);
