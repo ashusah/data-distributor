@@ -8,7 +8,6 @@ import com.datadistributor.outadapter.repository.springjpa.AccountBalanceJpaRepo
 import com.datadistributor.outadapter.repository.springjpa.SignalAuditRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalEventJpaRepository;
 import com.datadistributor.outadapter.repository.springjpa.SignalJpaRepository;
-import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -24,18 +23,15 @@ public class TestSignalDataSeeder {
   private final SignalAuditRepository auditRepo;
   private final AccountBalanceJpaRepository accountRepo;
   private final SignalJpaRepository signalJpaRepo;
-  private final EntityManager entityManager;
 
   public TestSignalDataSeeder(SignalEventJpaRepository signalRepo,
       SignalAuditRepository auditRepo,
       AccountBalanceJpaRepository accountRepo,
-      SignalJpaRepository signalJpaRepo,
-      EntityManager entityManager) {
+      SignalJpaRepository signalJpaRepo) {
     this.signalRepo = signalRepo;
     this.auditRepo = auditRepo;
     this.accountRepo = accountRepo;
     this.signalJpaRepo = signalJpaRepo;
-    this.entityManager = entityManager;
   }
 
   public void resetData() {

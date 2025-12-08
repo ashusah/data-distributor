@@ -60,7 +60,7 @@ class WebClientCircuitOpenIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo, entityManager);
+    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo);
     seeder.resetData();
     stubCallCount.set(0);
     circuitBreakerRegistry.circuitBreaker("signalEventApi").reset();

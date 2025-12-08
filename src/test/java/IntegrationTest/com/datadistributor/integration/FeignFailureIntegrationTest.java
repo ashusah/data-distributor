@@ -49,7 +49,7 @@ class FeignFailureIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo, entityManager);
+    seeder = new TestSignalDataSeeder(eventRepo, auditRepo, accountRepo, signalJpaRepo);
     seeder.resetData();
     Mockito.when(feignClient.postSignalEvent(Mockito.any())).thenThrow(new IllegalStateException("Feign down"));
   }

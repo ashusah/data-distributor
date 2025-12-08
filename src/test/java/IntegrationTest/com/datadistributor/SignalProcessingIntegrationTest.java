@@ -49,7 +49,7 @@ class SignalProcessingIntegrationTest {
 
   @BeforeEach
   void setup() {
-    dataSeeder = new TestSignalDataSeeder(signalRepo, auditRepo, accountRepo, signalJpaRepo, entityManager);
+    dataSeeder = new TestSignalDataSeeder(signalRepo, auditRepo, accountRepo, signalJpaRepo);
     dataSeeder.resetData();
     testDate = LocalDate.now();
     expectedIds = dataSeeder.seedSignalEvents(testDate, 3);
