@@ -471,6 +471,9 @@ class SignalDispatchSelectorTest {
     void markSuccess(Long uabsEventId) { if (uabsEventId != null) successIds.add(uabsEventId); }
     @Override public boolean isEventSuccessful(Long uabsEventId, long consumerId) { return successIds.contains(uabsEventId); }
     @Override public List<Long> findFailedEventIdsForDate(LocalDate date) { return List.of(); }
+    @Override public Optional<String> getLatestAuditStatusForEvent(Long uabsEventId, long consumerId) {
+      return successIds.contains(uabsEventId) ? Optional.of("PASS") : Optional.empty();
+    }
   }
 
   private static class InMemoryInitialCehPort implements InitialCehMappingPort {

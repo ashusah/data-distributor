@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -62,6 +63,16 @@ public class SignalAuditQueryRepositoryAdapter implements SignalAuditQueryPort {
         .filter(audit -> !isSuccessStatus(audit.getStatus()))
         .map(SignalAuditJpaEntity::getUabsEventId)
         .toList();
+  }
+
+  @Override
+  public Optional<String> getLatestAuditStatusForEvent(Long uabsEventId, long consumerId) {
+    if (uabsEventId == null) {
+      return Optional.empty();
+    }
+    return signalAuditRepository
+        .findTopByUabsEventIdAndConsumerIdOrderByAuditRecordDateTimeDesc(uabsEventId, consumerId)
+        .map(SignalAuditJpaEntity::getStatus);
   }
 
   private boolean isSuccessStatus(String status) {

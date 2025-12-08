@@ -202,11 +202,24 @@ public class SignalEventProcessingDomainService implements SignalEventProcessing
           Optional<SignalEvent> prev = signalEventRepository.getPreviousEvent(
               event.getSignalId(), event.getEventRecordDateTime());
           if (prev.isPresent()) {
-            boolean ok = signalAuditQueryPort.isEventSuccessful(prev.get().getUabsEventId(), 1L);
-            if (!ok) {
-              missingPrereq.add(event);
+            Long prevEventId = prev.get().getUabsEventId();
+            
+            // Check latest audit status for the previous event's uabsEventId
+            // Ordered by timestamp (most recent first)
+            Optional<String> latestStatus = signalAuditQueryPort.getLatestAuditStatusForEvent(prevEventId, 1L);
+            
+            if (latestStatus.isPresent()) {
+              // Audit entry exists - check if it's PASS or FAIL
+              String status = latestStatus.get();
+              if (!isSuccessStatus(status)) {
+                // Latest entry is FAIL -> stop batch
+                missingPrereq.add(event);
+              }
+              // If latest entry is PASS -> continue (don't add to missingPrereq)
             }
+            // If no audit entry exists -> continue (don't add to missingPrereq)
           }
+          // If no previous event exists -> continue (no prerequisite to check)
         });
 
     if (missingPrereq.isEmpty()) {
@@ -258,5 +271,11 @@ public class SignalEventProcessingDomainService implements SignalEventProcessing
         result.getTotalCount(),
         result.getSuccessCount(),
         result.getFailureCount());
+  }
+
+  private boolean isSuccessStatus(String status) {
+    if (status == null) return false;
+    String normalized = status.trim().toUpperCase();
+    return "PASS".equals(normalized) || "SUCCESS".equals(normalized);
   }
 }

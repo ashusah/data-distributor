@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -93,6 +94,11 @@ class SignalEventRetryServiceTest {
     @Override
     public List<Long> findFailedEventIdsForDate(LocalDate date) {
       return failedIds;
+    }
+
+    @Override
+    public Optional<String> getLatestAuditStatusForEvent(Long uabsEventId, long consumerId) {
+      return Optional.empty();
     }
   }
 

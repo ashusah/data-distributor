@@ -138,6 +138,11 @@ class SignalEventDeliveryReportFileTest {
     public List<Long> findFailedEventIdsForDate(LocalDate date) {
       return Collections.emptyList();
     }
+
+    @Override
+    public Optional<String> getLatestAuditStatusForEvent(Long uabsEventId, long consumerId) {
+      return Optional.of("PASS");
+    }
   }
 
   private static class StubDispatchSelector implements SignalDispatchSelectorUseCase {

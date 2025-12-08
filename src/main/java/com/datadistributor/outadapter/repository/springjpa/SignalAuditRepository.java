@@ -15,6 +15,9 @@ public interface SignalAuditRepository extends JpaRepository<SignalAuditJpaEntit
 
   Optional<SignalAuditJpaEntity> findTopByUabsEventIdAndConsumerIdOrderByAuditIdDesc(Long uabsEventId, Long consumerId);
 
+  Optional<SignalAuditJpaEntity> findTopByUabsEventIdAndConsumerIdOrderByAuditRecordDateTimeDesc(
+      Long uabsEventId, Long consumerId);
+
   List<SignalAuditJpaEntity> findByAuditRecordDateTimeBetweenAndConsumerIdOrderByAuditRecordDateTimeDesc(
       LocalDateTime start,
       LocalDateTime end,
