@@ -182,7 +182,7 @@ class PrerequisiteFlowIntegrationTest extends AbstractIntegrationTest {
   private void saveAuditWithTimestamp(SignalEventJpaEntity event, String status, String code, LocalDateTime timestamp) {
     SignalAuditJpaEntity audit = new SignalAuditJpaEntity();
     audit.setAuditRecordDateTime(timestamp);
-    audit.setAgreementId(event.getAccountBalance().getAgreementId());
+    audit.setAgreementId(event.getAgreementId());
     audit.setSignalId(event.getSignal().getSignalId());
     audit.setUabsEventId(event.getUabsEventId());
     audit.setConsumerId(1L);

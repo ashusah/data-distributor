@@ -20,9 +20,7 @@ class EntityRoundTripTest {
     signal.setSignalId(2L);
     entity.setSignal(signal);
     
-    AccountBalanceJpaEntity account = new AccountBalanceJpaEntity();
-    account.setAgreementId(3L);
-    entity.setAccountBalance(account);
+    entity.setAgreementId(3L);
     
     entity.setEventRecordDateTime(LocalDateTime.of(2024, 1, 1, 1, 0));
     entity.setEventType("TYPE");
@@ -42,7 +40,7 @@ class EntityRoundTripTest {
 
     assertThat(entity.getUabsEventId()).isEqualTo(1L);
     assertThat(entity.getSignal().getSignalId()).isEqualTo(2L);
-    assertThat(entity.getAccountBalance().getAgreementId()).isEqualTo(3L);
+    assertThat(entity.getAgreementId()).isEqualTo(3L);
     assertThat(entity.getEventRecordDateTime()).isEqualTo(LocalDateTime.of(2024, 1, 1, 1, 0));
     assertThat(entity.getEventType()).isEqualTo("TYPE");
     assertThat(entity.getEventStatus()).isEqualTo("STATUS");

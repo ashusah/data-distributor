@@ -58,10 +58,10 @@ class OverdueDispatchIntegrationTest {
     signal.setSignalStartDate(startDate);
     signal = signalRepo.save(signal);
 
-    AccountBalanceJpaEntity account = createAccount(signal.getAgreementId());
+    createAccount(signal.getAgreementId());
     SignalEventJpaEntity event = new SignalEventJpaEntity();
     event.setSignal(signal);
-    event.setAccountBalance(account);
+    event.setAgreementId(signal.getAgreementId());
     event.setEventRecordDateTime(LocalDateTime.of(startDate, LocalTime.of(8, 0)));
     event.setEventStatus("OVERLIMIT_SIGNAL");
     event.setEventType("OVERLIMIT_SIGNAL");

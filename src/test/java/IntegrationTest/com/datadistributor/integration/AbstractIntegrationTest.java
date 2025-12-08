@@ -59,8 +59,8 @@ abstract class AbstractIntegrationTest {
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
     SignalJpaEntity signal = ensureSignal(signalId, agreementId, ts.toLocalDate());
     entity.setSignal(signal);
-    AccountBalanceJpaEntity account = ensureAccount(agreementId);
-    entity.setAccountBalance(account);
+    ensureAccount(agreementId); // Ensure account exists
+    entity.setAgreementId(agreementId);
     entity.setEventRecordDateTime(ts);
     entity.setEventType("CONTRACT_UPDATE");
     entity.setEventStatus(status);
@@ -74,7 +74,7 @@ abstract class AbstractIntegrationTest {
   protected void saveAuditPass(SignalEventJpaEntity event) {
     SignalAuditJpaEntity audit = new SignalAuditJpaEntity();
     audit.setAuditRecordDateTime(LocalDateTime.now());
-    audit.setAgreementId(event.getAccountBalance().getAgreementId());
+    audit.setAgreementId(event.getAgreementId());
     audit.setSignalId(event.getSignal().getSignalId());
     audit.setUabsEventId(event.getUabsEventId());
     audit.setConsumerId(1L);

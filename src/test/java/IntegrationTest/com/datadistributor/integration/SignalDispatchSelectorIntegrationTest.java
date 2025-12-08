@@ -126,10 +126,10 @@ class SignalDispatchSelectorIntegrationTest extends AbstractIntegrationTest {
           return signalRepo.save(newSignal);
         });
     saveAccount(agreementId, agreementId);
-    AccountBalanceJpaEntity account = accountRepo.findById(agreementId).orElseThrow();
+    saveAccount(agreementId, agreementId);
     SignalEventJpaEntity entity = new SignalEventJpaEntity();
     entity.setSignal(signal);
-    entity.setAccountBalance(account);
+    entity.setAgreementId(agreementId);
     entity.setEventRecordDateTime(ts);
     entity.setEventStatus(status);
     entity.setEventType(status);

@@ -30,9 +30,7 @@ class SignalEventMapperTest {
     signal.setSignalId(2L);
     entity.setSignal(signal);
     
-    AccountBalanceJpaEntity account = new AccountBalanceJpaEntity();
-    account.setAgreementId(3L);
-    entity.setAccountBalance(account);
+    entity.setAgreementId(3L);
     
     entity.setEventRecordDateTime(LocalDateTime.of(2024, 1, 1, 10, 0));
     entity.setEventType("TYPE");

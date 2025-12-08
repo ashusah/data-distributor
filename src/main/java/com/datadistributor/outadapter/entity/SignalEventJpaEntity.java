@@ -36,9 +36,8 @@ public class SignalEventJpaEntity {
     @JoinColumn(name = "signal_id", referencedColumnName = "signal_id", nullable = false)
     private SignalJpaEntity signal;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agreement_id", referencedColumnName = "agreement_id", nullable = false)
-    private AccountBalanceJpaEntity accountBalance;
+    @Column(name = "agreement_id")
+    private Long agreementId;
 
     @Column(name = "event_record_date_time")
     private LocalDateTime eventRecordDateTime;

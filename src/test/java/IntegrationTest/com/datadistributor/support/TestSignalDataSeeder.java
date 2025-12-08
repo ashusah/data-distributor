@@ -47,11 +47,11 @@ public class TestSignalDataSeeder {
     List<Long> ids = new ArrayList<>();
     for (long i = 1; i <= count; i++) {
       long agreementId = 3000L + i;
-      AccountBalanceJpaEntity account = ensureAccount(agreementId);
+      ensureAccount(agreementId);
       SignalJpaEntity signal = ensureSignal(2000L + i, agreementId, date.minusDays(5));
       SignalEventJpaEntity entity = new SignalEventJpaEntity();
       entity.setSignal(signal);
-      entity.setAccountBalance(account);
+      entity.setAgreementId(agreementId);
       entity.setEventRecordDateTime(LocalDateTime.of(date, LocalTime.of(1, 0)));
       entity.setEventType("CONTRACT_UPDATE");
       entity.setEventStatus("OVERLIMIT_SIGNAL");
