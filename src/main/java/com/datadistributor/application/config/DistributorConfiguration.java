@@ -134,4 +134,19 @@ public class DistributorConfiguration {
             properties.getAudit().getConsumerId()
         );
     }
+
+    @Bean
+    DialSignalDataExportDomainService dialSignalDataExportDomainService(
+        SignalEventUseCase signalEventUseCase,
+        SignalUseCase signalQueryUseCase,
+        AccountBalanceOverviewPort accountBalanceOverviewPort,
+        FileStoragePort fileStoragePort,
+        DataDistributorProperties properties) {
+        return new DialSignalDataExportDomainService(
+            signalEventUseCase,
+            signalQueryUseCase,
+            accountBalanceOverviewPort,
+            fileStoragePort,
+            properties);
+    }
 }

@@ -2,12 +2,15 @@ package com.datadistributor.outadapter.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 
 import com.datadistributor.application.config.DataDistributorProperties;
@@ -57,6 +60,10 @@ class SignalEventBatchSenderTest {
     event.setEventRecordDateTime(LocalDateTime.now());
     event.setEventStatus("OVERLIMIT_SIGNAL");
     return event;
+  }
+
+  private ApiResponse createSuccessResponse(long cehEventId) {
+    return new ApiResponse(Map.of("ceh_event_id", cehEventId), 200);
   }
 
   @Test
@@ -352,4 +359,222 @@ class SignalEventBatchSenderTest {
 
     assertThat(senderWithNegativeRate).isNotNull();
   }
+
+  // *****************************
+  // FRESH TEST CASE
+  // *****************************
+
+  @Test
+  void submitBatch_handlesNullEventsList() {
+    CompletableFuture<BatchResult> future = sender.submitBatch(null);
+    BatchResult result = future.join();
+
+    assertThat(result.successCount()).isZero();
+    assertThat(result.failureCount()).isZero();
+  }
+
+  @Test
+  void submitBatch_handlesSequenceNumberLogging() {
+    SignalEvent event = event(1);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(createSuccessResponse(100L)));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    future.join();
+
+    // Should log at debug level for non-milestone sequences
+    verify(reactiveClient).send(any());
+  }
+
+  @Test
+  void postEventReactive_handlesNullResponse() {
+    SignalEvent event = event(1);
+    // Return error Mono to simulate null response causing NPE
+    // When response is null, response.body() would throw NPE, so we simulate that with an error
+    when(reactiveClient.send(any())).thenReturn(Mono.error(new NullPointerException("Response is null")));
+    when(errorClassifier.classify(any(NullPointerException.class))).thenReturn(new FailureClassification("FAIL", "No response", "500"));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.failureCount()).isEqualTo(1);
+    verify(errorClassifier).classify(any(NullPointerException.class));
+  }
+
+  @Test
+  void postEventReactive_handlesNullResponseBody() {
+    SignalEvent event = event(1);
+    ApiResponse response = new ApiResponse(null, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+    // If persistAudit throws an exception, it's caught and logAuditFailure is called
+    // But if logAuditFailure also throws, handleException might be called
+    // So we need to ensure errorClassifier is mocked if handleException is called
+    doThrow(new RuntimeException("Audit failed")).when(signalAuditService).persistAudit(any(), eq("FAIL"), any(), any());
+    when(errorClassifier.classify(any())).thenReturn(new FailureClassification("FAIL", "Audit failed", "500"));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.failureCount()).isEqualTo(1);
+  }
+
+  @Test
+  void handleSuccess_handlesCehEventIdAsInteger() {
+    SignalEvent event = event(1);
+    Map<String, Object> body = Map.of("ceh_event_id", 100);
+    ApiResponse response = new ApiResponse(body, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(signalAuditService).persistAudit(eq(event), eq("PASS"), eq("200"), contains("ceh_event_id=100"));
+    verify(initialCehMappingUseCase).handleInitialCehMapping(event, 100L);
+  }
+
+  @Test
+  void handleSuccess_handlesCehEventIdAsLong() {
+    SignalEvent event = event(1);
+    Map<String, Object> body = Map.of("ceh_event_id", 200L);
+    ApiResponse response = new ApiResponse(body, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(initialCehMappingUseCase).handleInitialCehMapping(event, 200L);
+  }
+
+  @Test
+  void handleSuccess_handlesCehEventIdAsString() {
+    SignalEvent event = event(1);
+    Map<String, Object> body = Map.of("ceh_event_id", "300");
+    ApiResponse response = new ApiResponse(body, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(initialCehMappingUseCase).handleInitialCehMapping(event, 300L);
+  }
+
+  @Test
+  void handleSuccess_handlesAuditPersistenceFailure() {
+    SignalEvent event = event(1);
+    Map<String, Object> body = Map.of("ceh_event_id", 100L);
+    ApiResponse response = new ApiResponse(body, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+    doThrow(new RuntimeException("Audit failed"))
+        .when(signalAuditService).persistAudit(any(), any(), any(), any());
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(signalAuditService).logAuditFailure(eq(event), any(RuntimeException.class));
+    verify(initialCehMappingUseCase).handleInitialCehMapping(event, 100L);
+  }
+
+  @Test
+  void handleSuccess_handlesNoCehEventIdWithAuditFailure() {
+    SignalEvent event = event(1);
+    Map<String, Object> body = Map.of("other_field", "value");
+    ApiResponse response = new ApiResponse(body, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+    doThrow(new RuntimeException("Audit failed"))
+        .when(signalAuditService).persistAudit(any(), any(), any(), any());
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.failureCount()).isEqualTo(1);
+    verify(signalAuditService).logAuditFailure(eq(event), any(RuntimeException.class));
+  }
+
+  @Test
+  void handleException_handlesAuditPersistenceFailure() {
+    SignalEvent event = event(1);
+    RuntimeException error = new RuntimeException("Network error");
+    when(reactiveClient.send(any())).thenReturn(Mono.error(error));
+    when(errorClassifier.classify(error)).thenReturn(new FailureClassification("FAIL", "reason", "500"));
+    doThrow(new RuntimeException("Audit failed"))
+        .when(signalAuditService).persistAudit(any(), any(), any(), any());
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.failureCount()).isEqualTo(1);
+    verify(signalAuditService).logAuditFailure(eq(event), any(RuntimeException.class));
+  }
+
+  @Test
+  void parseLongSafely_handlesNumber() {
+    SignalEvent event = event(1);
+    Map<String, Object> body = Map.of("ceh_event_id", 123);
+    ApiResponse response = new ApiResponse(body, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(initialCehMappingUseCase).handleInitialCehMapping(event, 123L);
+  }
+
+  @Test
+  void parseLongSafely_handlesString() {
+    SignalEvent event = event(1);
+    Map<String, Object> body = Map.of("ceh_event_id", "456");
+    ApiResponse response = new ApiResponse(body, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(initialCehMappingUseCase).handleInitialCehMapping(event, 456L);
+  }
+
+  @Test
+  void hasCehEventId_returnsFalseForNullBody() {
+    SignalEvent event = event(1);
+    ApiResponse response = new ApiResponse(null, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+    // Null body triggers handleSuccess path with hasCehEventId=false, which persists FAIL audit
+    // If persistAudit throws, it's caught and logAuditFailure is called
+    // But if logAuditFailure also throws, handleException might be called
+    doThrow(new RuntimeException("Audit failed")).when(signalAuditService).persistAudit(any(), eq("FAIL"), any(), any());
+    when(errorClassifier.classify(any())).thenReturn(new FailureClassification("FAIL", "Audit failed", "500"));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.failureCount()).isEqualTo(1);
+  }
+
+  @Test
+  void hasCehEventId_returnsFalseWhenKeyMissing() {
+    SignalEvent event = event(1);
+    Map<String, Object> body = Map.of("other_key", "value");
+    ApiResponse response = new ApiResponse(body, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event));
+    BatchResult result = future.join();
+
+    assertThat(result.failureCount()).isEqualTo(1);
+  }
+
+  @Test
+  void send_handlesExceptionDuringBlock() {
+    SignalEvent event = event(1);
+    when(reactiveClient.send(any())).thenReturn(Mono.error(new RuntimeException("Error")));
+
+    boolean result = sender.send(event);
+
+    assertThat(result).isFalse();
+  }
+
 }

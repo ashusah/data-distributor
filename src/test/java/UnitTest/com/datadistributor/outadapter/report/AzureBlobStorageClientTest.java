@@ -182,4 +182,207 @@ class AzureBlobStorageClientTest {
 
     assertThat(container.lastPath).isEqualTo("file.txt");
   }
+
+  // *****************************
+  // FRESH TEST CASE
+  // *****************************
+
+  @Test
+  void buildClient_returnsNullWhenStorageDisabled() {
+    DataDistributorProperties properties = new DataDistributorProperties();
+    properties.getStorage().setEnabled(false);
+    AzureBlobStorageClient disabledClient = new AzureBlobStorageClient(properties);
+
+    assertThatCode(() -> disabledClient.upload("folder", "file.txt", "content"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void buildClient_returnsNullWhenStorageUrlMissing() {
+    DataDistributorProperties properties = new DataDistributorProperties();
+    properties.getStorage().setEnabled(true);
+    properties.getStorage().setStorageUrl(null);
+    properties.getStorage().setManagedIdentityClientId("client-id");
+    AzureBlobStorageClient clientWithoutUrl = new AzureBlobStorageClient(properties);
+
+    assertThatCode(() -> clientWithoutUrl.upload("folder", "file.txt", "content"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void buildClient_returnsNullWhenStorageUrlBlank() {
+    DataDistributorProperties properties = new DataDistributorProperties();
+    properties.getStorage().setEnabled(true);
+    properties.getStorage().setStorageUrl("   ");
+    properties.getStorage().setManagedIdentityClientId("client-id");
+    AzureBlobStorageClient clientWithBlankUrl = new AzureBlobStorageClient(properties);
+
+    assertThatCode(() -> clientWithBlankUrl.upload("folder", "file.txt", "content"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void buildClient_returnsNullWhenManagedIdentityClientIdMissing() {
+    DataDistributorProperties properties = new DataDistributorProperties();
+    properties.getStorage().setEnabled(true);
+    properties.getStorage().setStorageUrl("https://storage.azure.net");
+    properties.getStorage().setManagedIdentityClientId(null);
+    AzureBlobStorageClient clientWithoutClientId = new AzureBlobStorageClient(properties);
+
+    assertThatCode(() -> clientWithoutClientId.upload("folder", "file.txt", "content"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void buildClient_returnsNullWhenManagedIdentityClientIdBlank() {
+    DataDistributorProperties properties = new DataDistributorProperties();
+    properties.getStorage().setEnabled(true);
+    properties.getStorage().setStorageUrl("https://storage.azure.net");
+    properties.getStorage().setManagedIdentityClientId("   ");
+    AzureBlobStorageClient clientWithBlankClientId = new AzureBlobStorageClient(properties);
+
+    assertThatCode(() -> clientWithBlankClientId.upload("folder", "file.txt", "content"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void upload_handlesExceptionDuringContainerExists() {
+    DataDistributorProperties properties = new DataDistributorProperties();
+    properties.getStorage().setEnabled(true);
+    properties.getStorage().setContainer("my-container");
+    BlobServiceClientAdapter failingAdapter = new BlobServiceClientAdapter() {
+      @Override
+      public BlobContainerClientAdapter getBlobContainerClient(String containerName) {
+        return new BlobContainerClientAdapter() {
+          @Override
+          public boolean exists() {
+            throw new RuntimeException("Exists check failed");
+          }
+
+          @Override
+          public void create() {
+            // not called
+          }
+
+          @Override
+          public BlobClientAdapter getBlobClient(String path) {
+            return null;
+          }
+        };
+      }
+    };
+    AzureBlobStorageClient clientWithFailingAdapter = new AzureBlobStorageClient(properties, failingAdapter);
+
+    assertThatCode(() -> clientWithFailingAdapter.upload("folder", "file.txt", "content"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void upload_handlesExceptionDuringContainerCreate() {
+    DataDistributorProperties properties = new DataDistributorProperties();
+    properties.getStorage().setEnabled(true);
+    properties.getStorage().setContainer("my-container");
+    BlobServiceClientAdapter failingAdapter = new BlobServiceClientAdapter() {
+      @Override
+      public BlobContainerClientAdapter getBlobContainerClient(String containerName) {
+        return new BlobContainerClientAdapter() {
+          @Override
+          public boolean exists() {
+            return false;
+          }
+
+          @Override
+          public void create() {
+            throw new RuntimeException("Create failed");
+          }
+
+          @Override
+          public BlobClientAdapter getBlobClient(String path) {
+            return null;
+          }
+        };
+      }
+    };
+    AzureBlobStorageClient clientWithFailingAdapter = new AzureBlobStorageClient(properties, failingAdapter);
+
+    assertThatCode(() -> clientWithFailingAdapter.upload("folder", "file.txt", "content"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void upload_handlesExceptionDuringBlobUpload() {
+    DataDistributorProperties properties = new DataDistributorProperties();
+    properties.getStorage().setEnabled(true);
+    properties.getStorage().setContainer("my-container");
+    BlobServiceClientAdapter failingAdapter = new BlobServiceClientAdapter() {
+      @Override
+      public BlobContainerClientAdapter getBlobContainerClient(String containerName) {
+        return new BlobContainerClientAdapter() {
+          @Override
+          public boolean exists() {
+            return true;
+          }
+
+          @Override
+          public void create() {
+            // not called
+          }
+
+          @Override
+          public BlobClientAdapter getBlobClient(String path) {
+            return new BlobClientAdapter() {
+              @Override
+              public void upload(String content) {
+                throw new RuntimeException("Upload failed");
+              }
+            };
+          }
+        };
+      }
+    };
+    AzureBlobStorageClient clientWithFailingAdapter = new AzureBlobStorageClient(properties, failingAdapter);
+
+    assertThatCode(() -> clientWithFailingAdapter.upload("folder", "file.txt", "content"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void buildPath_handlesNullFolder() {
+    container.exists = true;
+    client.upload(null, "file.txt", "content");
+
+    assertThat(container.lastPath).isEqualTo("file.txt");
+  }
+
+  @Test
+  void buildPath_handlesEmptyFolder() {
+    container.exists = true;
+    client.upload("", "file.txt", "content");
+
+    assertThat(container.lastPath).isEqualTo("file.txt");
+  }
+
+  @Test
+  void buildPath_handlesFolderWithLeadingTrailingWhitespace() {
+    container.exists = true;
+    client.upload("  folder  ", "file.txt", "content");
+
+    assertThat(container.lastPath).isEqualTo("folder/file.txt");
+  }
+
+  @Test
+  void buildPath_handlesFolderWithMultipleSlashes() {
+    container.exists = true;
+    client.upload("folder/", "file.txt", "content");
+
+    assertThat(container.lastPath).isEqualTo("folder/file.txt");
+  }
+
+  @Test
+  void buildPath_handlesFolderWithoutTrailingSlash() {
+    container.exists = true;
+    client.upload("folder", "file.txt", "content");
+
+    assertThat(container.lastPath).isEqualTo("folder/file.txt");
+  }
 }

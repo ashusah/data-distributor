@@ -825,4 +825,36 @@ class SignalDispatchDomainSelectorTest {
 
     assertThat(result).containsExactly(event);
   }
+
+  // *****************************
+  // FRESH TEST CASE
+  // *****************************
+
+  @Test
+  void selectEventsToSend_filtersNullSignalIds() {
+    SignalEvent event1 = buildEvent(1L, startDate, 250, "OVERLIMIT_SIGNAL");
+    SignalEvent event2 = buildEvent(2L, startDate, 250, "OVERLIMIT_SIGNAL");
+    event2.setSignalId(null); // null signalId
+
+    stubEvents(Map.of(startDate, List.of(event1, event2)));
+    when(signalEventPort.getEarliestOverlimitEvent(signalId)).thenReturn(Optional.of(event1));
+    AtomicBoolean openSent = new AtomicBoolean(false);
+    stubInitialState(openSent, event1.getUabsEventId());
+
+    List<SignalEvent> result = selector.selectEventsToSend(startDate);
+
+    // Should only process event1, event2 with null signalId is filtered out
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void evaluateSignal_returnsEarlyWhenEarliestOverlimitIsNull() {
+    SignalEvent event = buildEvent(1L, startDate, 250, "OVERLIMIT_SIGNAL");
+    stubEvents(Map.of(startDate, List.of(event)));
+    when(signalEventPort.getEarliestOverlimitEvent(signalId)).thenReturn(Optional.empty());
+
+    List<SignalEvent> result = selector.selectEventsToSend(startDate);
+
+    assertThat(result).isEmpty();
+  }
 }

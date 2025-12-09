@@ -12,12 +12,11 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
 
 /**
  * Builds and uploads the DIAL signal data export as CSV using domain ports for data enrichment.
+ * Domain service - plain Java, no framework dependencies.
  */
-@Service
 public class DialSignalDataExportDomainService {
 
   private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");

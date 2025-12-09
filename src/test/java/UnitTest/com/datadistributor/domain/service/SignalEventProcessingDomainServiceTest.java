@@ -642,6 +642,486 @@ class SignalEventProcessingDomainServiceTest {
     assertThat(result.getSuccessCount()).isEqualTo(1);
   }
 
+  // *****************************
+  // FRESH TEST CASE
+  // *****************************
+
+  @Test
+  void processEventsForDate_usesLegacyPagingWhenSelectorReturnsEmpty() {
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of());
+    when(signalEventRepository.countSignalEventsForCEH(testDate))
+        .thenReturn(5L);
+    when(signalEventRepository.getSignalEventsForCEH(testDate, 0, 10))
+        .thenReturn(List.of(createEvent(1L, 1L, testDate.atTime(10, 0))));
+    when(signalEventRepository.getSignalEventsForCEH(testDate, 1, 10))
+        .thenReturn(List.of());
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+    verify(signalEventRepository).getSignalEventsForCEH(testDate, 0, 10);
+  }
+
+  @Test
+  void processEventsForDate_returnsEmptyWhenLegacyPagingAlsoEmpty() {
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of());
+    when(signalEventRepository.countSignalEventsForCEH(testDate))
+        .thenReturn(0L);
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getTotalCount()).isZero();
+    assertThat(result.getMessage()).contains("No signal events found");
+  }
+
+  @Test
+  void processEventsForDate_handlesMultipleBatchesFromSelector() {
+    List<SignalEvent> events = new ArrayList<>();
+    for (int i = 1; i <= 25; i++) {
+      events.add(createEvent((long) i, 1L, testDate.atTime(10 + (i % 14), i % 60)));
+    }
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(events);
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(10, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(30); // 3 batches * 10 success each
+    verify(signalEventBatchPort, times(3)).submitBatch(anyList());
+  }
+
+  @Test
+  void processEventsForDate_handlesMultipleBatchesFromLegacyPaging() {
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of());
+    when(signalEventRepository.countSignalEventsForCEH(testDate))
+        .thenReturn(25L);
+    when(signalEventRepository.getSignalEventsForCEH(testDate, 0, 10))
+        .thenReturn(createEvents(1, 10));
+    when(signalEventRepository.getSignalEventsForCEH(testDate, 1, 10))
+        .thenReturn(createEvents(11, 10));
+    when(signalEventRepository.getSignalEventsForCEH(testDate, 2, 10))
+        .thenReturn(createEvents(21, 5));
+    when(signalEventRepository.getSignalEventsForCEH(testDate, 3, 10))
+        .thenReturn(List.of());
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(10, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(30); // 3 batches
+    verify(signalEventBatchPort, times(3)).submitBatch(anyList());
+  }
+
+  @Test
+  void processEventsForDate_handlesEmptyTrackedBatches() {
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of());
+    when(signalEventRepository.countSignalEventsForCEH(testDate))
+        .thenReturn(0L);
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getTotalCount()).isZero();
+  }
+
+
+  @Test
+  void processEventsForDate_handlesBatchSizeZero() {
+    SignalEventProcessingDomainService serviceWithZeroBatch = new SignalEventProcessingDomainService(
+        signalEventRepository,
+        signalEventBatchPort,
+        signalAuditQueryPort,
+        signalDispatchSelector,
+        0, // batchSize = 0, should become 1
+        jobProgressTracker,
+        deliveryReportPublisher
+    );
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(createEvent(1L, 1L, testDate.atTime(10, 0))));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = serviceWithZeroBatch.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+  }
+
+  @Test
+  void processEventsForDate_handlesBatchSizeNegative() {
+    SignalEventProcessingDomainService serviceWithNegativeBatch = new SignalEventProcessingDomainService(
+        signalEventRepository,
+        signalEventBatchPort,
+        signalAuditQueryPort,
+        signalDispatchSelector,
+        -5, // batchSize = -5, should become 1
+        jobProgressTracker,
+        deliveryReportPublisher
+    );
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(createEvent(1L, 1L, testDate.atTime(10, 0))));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = serviceWithNegativeBatch.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+  }
+
+  @Test
+  void processEventsForDate_handlesMixedSuccessAndFailureResults() {
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(createEvents(1, 20));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(8, 2)))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(7, 3)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(15);
+    assertThat(result.getFailureCount()).isEqualTo(5);
+    assertThat(result.getTotalCount()).isEqualTo(20L);
+  }
+
+  @Test
+  void processEventsForDate_publishesReportOnSuccess() {
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(createEvent(1L, 1L, testDate.atTime(10, 0))));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    ArgumentCaptor<DeliveryReport> reportCaptor = ArgumentCaptor.forClass(DeliveryReport.class);
+    verify(deliveryReportPublisher).publish(reportCaptor.capture());
+    DeliveryReport report = reportCaptor.getValue();
+    assertThat(report.getDate()).isEqualTo(testDate);
+    assertThat(report.getTotalEvents()).isEqualTo(1L);
+    assertThat(report.getSuccessEvents()).isEqualTo(1);
+    assertThat(report.getFailedEvents()).isZero();
+    assertThat(report.getContent()).contains("2024-12-03");
+    assertThat(report.getContent()).contains("1");
+  }
+
+  @Test
+  void processEventsForDate_handlesReportPublishingFailure() {
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(createEvent(1L, 1L, testDate.atTime(10, 0))));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+    doThrow(new RuntimeException("Publish failed"))
+        .when(deliveryReportPublisher).publish(any(DeliveryReport.class));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Should still return success even if report publishing fails
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+  }
+
+  @Test
+  void processEventsForDate_handlesNullDeliveryReportPublisher() {
+    SignalEventProcessingDomainService serviceWithoutPublisher = new SignalEventProcessingDomainService(
+        signalEventRepository,
+        signalEventBatchPort,
+        signalAuditQueryPort,
+        signalDispatchSelector,
+        10,
+        jobProgressTracker,
+        null // no publisher
+    );
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(createEvent(1L, 1L, testDate.atTime(10, 0))));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = serviceWithoutPublisher.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+    // Should not throw NPE
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithNullUabsEventId() {
+    SignalEvent event = createEvent(null, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(null, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(null, 1L))
+        .thenReturn(Optional.empty());
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Should continue processing when prevEvent has null uabsEventId
+    assertThat(result.getMessage()).doesNotContain("Prerequisite check failed");
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithNullPrevEventUabsEventId() {
+    SignalEvent event = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(null, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(null, 1L))
+        .thenReturn(Optional.empty());
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Should continue processing when prevEvent has null uabsEventId
+    assertThat(result.getMessage()).doesNotContain("Prerequisite check failed");
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithNullStatus() {
+    SignalEvent event = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(2L, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    // Return empty optional to simulate no status (which means continue processing)
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(2L, 1L))
+        .thenReturn(Optional.empty());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // No status means continue processing
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+    assertThat(result.getMessage()).doesNotContain("Prerequisite check failed");
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithEmptyStringStatus() {
+    SignalEvent event = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(2L, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(2L, 1L))
+        .thenReturn(Optional.of("")); // empty status
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Empty status should be treated as FAIL
+    assertThat(result.getMessage()).contains("Prerequisite check failed");
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithWhitespaceStatus() {
+    SignalEvent event = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(2L, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(2L, 1L))
+        .thenReturn(Optional.of("   ")); // whitespace status
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Whitespace status should be treated as FAIL
+    assertThat(result.getMessage()).contains("Prerequisite check failed");
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithSuccessStatus() {
+    SignalEvent event = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(2L, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(2L, 1L))
+        .thenReturn(Optional.of("PASS"));
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Should proceed when status is PASS
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+    assertThat(result.getMessage()).doesNotContain("Prerequisite check failed");
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithSuccessStatusCaseInsensitive() {
+    SignalEvent event = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(2L, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(2L, 1L))
+        .thenReturn(Optional.of("success")); // lowercase
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Should proceed when status is "success" (case insensitive)
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithMultipleEventsSorted() {
+    SignalEvent event1 = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent event2 = createEvent(2L, 2L, testDate.atTime(11, 0));
+    SignalEvent prev1 = createEvent(10L, 1L, testDate.minusDays(1).atTime(10, 0));
+    SignalEvent prev2 = createEvent(20L, 2L, testDate.minusDays(1).atTime(11, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event2, event1)); // unsorted
+    when(signalEventRepository.getPreviousEvent(1L, event1.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prev1));
+    when(signalEventRepository.getPreviousEvent(2L, event2.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prev2));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(10L, 1L))
+        .thenReturn(Optional.of("PASS"));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(20L, 1L))
+        .thenReturn(Optional.of("FAIL"));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Should detect failure for event2
+    assertThat(result.getMessage()).contains("uabsEventIds=[2]");
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithNullEventRecordDateTime() {
+    SignalEvent event = createEvent(1L, 1L, null);
+    SignalEvent prevEvent = createEvent(2L, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, null))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(2L, 1L))
+        .thenReturn(Optional.of("PASS"));
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Should handle null eventRecordDateTime in sorting
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+  }
+
+  @Test
+  void processEventsForDate_handlesValidatePriorEventsWithNullUabsEventIdInSorting() {
+    SignalEvent event1 = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent event2 = createEvent(null, 1L, testDate.atTime(11, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event1, event2));
+    when(signalEventRepository.getPreviousEvent(any(), any()))
+        .thenReturn(Optional.empty());
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Should handle null uabsEventId in sorting
+    assertThat(result.getMessage()).doesNotContain("Prerequisite check failed");
+  }
+
+  @Test
+  void processEventsForDate_handlesSingleBatchExactlyBatchSize() {
+    List<SignalEvent> events = new ArrayList<>();
+    for (int i = 1; i <= 10; i++) {
+      events.add(createEvent((long) i, 1L, testDate.atTime(10, 0)));
+    }
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(events);
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(10, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(10);
+    verify(signalEventBatchPort, times(1)).submitBatch(anyList());
+  }
+
+  @Test
+  void processEventsForDate_handlesSingleBatchOneMoreThanBatchSize() {
+    List<SignalEvent> events = new ArrayList<>();
+    for (int i = 1; i <= 11; i++) {
+      events.add(createEvent((long) i, 1L, testDate.atTime(10, 0)));
+    }
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(events);
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(10, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(20); // 2 batches
+    verify(signalEventBatchPort, times(2)).submitBatch(anyList());
+  }
+
+  private List<SignalEvent> createEvents(int start, int count) {
+    List<SignalEvent> events = new ArrayList<>();
+    for (int i = start; i < start + count; i++) {
+      events.add(createEvent((long) i, 1L, testDate.atTime(10, 0)));
+    }
+    return events;
+  }
+
   private SignalEvent createEvent(Long uabsEventId, Long signalId, LocalDateTime eventRecordDateTime) {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(uabsEventId);
