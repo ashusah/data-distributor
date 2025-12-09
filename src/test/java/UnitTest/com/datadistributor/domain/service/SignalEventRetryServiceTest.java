@@ -10,6 +10,7 @@ import com.datadistributor.domain.outport.SignalEventSenderPort;
 import com.datadistributor.domain.service.SignalEventRetryDomainService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -93,7 +94,7 @@ class SignalEventRetryServiceTest {
 
     @Override
     public List<Long> findFailedEventIdsForDate(LocalDate date) {
-      return failedIds;
+      return failedIds == null ? Collections.emptyList() : failedIds;
     }
 
     @Override
@@ -130,11 +131,151 @@ class SignalEventRetryServiceTest {
 
   private static class FakeSenderPort implements SignalEventSenderPort {
     final List<Long> sent = new ArrayList<>();
+    boolean shouldFail = false;
 
     @Override
     public boolean send(SignalEvent event) {
+      if (shouldFail) {
+        return false;
+      }
       sent.add(event.getUabsEventId());
       return true;
     }
+  }
+
+  // ************************************************************************************************
+  // NEW COMPREHENSIVE TESTS FOR 100% COVERAGE
+  // ************************************************************************************************
+
+  @Test
+  void returnsErrorWhenDateIsNull() {
+    JobResult result = service.retryFailedEvents("job-1", null);
+
+    assertThat(result.getSuccessCount()).isZero();
+    assertThat(result.getFailureCount()).isZero();
+    assertThat(result.getTotalCount()).isZero();
+    assertThat(result.getMessage()).isEqualTo("Date is required");
+  }
+
+  @Test
+  void handlesNullFailedIds() {
+    auditPort.failedIds = null;
+    eventRepository.save(event(1L, LocalDateTime.of(2024, 12, 3, 10, 0)));
+
+    JobResult result = service.retryFailedEvents("job-4", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getTotalCount()).isZero();
+  }
+
+  @Test
+  void filtersNullIdsFromFailedList() {
+    auditPort.failedIds = new ArrayList<>(Arrays.asList(1L, null, 2L, null));
+    eventRepository.save(event(1L, LocalDateTime.of(2024, 12, 3, 10, 0)));
+    eventRepository.save(event(2L, LocalDateTime.of(2024, 12, 3, 11, 0)));
+
+    JobResult result = service.retryFailedEvents("job-5", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getSuccessCount()).isEqualTo(2);
+    assertThat(result.getTotalCount()).isEqualTo(2);
+  }
+
+  @Test
+  void handlesDuplicateFailedIds() {
+    auditPort.failedIds = List.of(1L, 1L, 2L, 2L);
+    eventRepository.save(event(1L, LocalDateTime.of(2024, 12, 3, 10, 0)));
+    eventRepository.save(event(2L, LocalDateTime.of(2024, 12, 3, 11, 0)));
+
+    JobResult result = service.retryFailedEvents("job-6", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getSuccessCount()).isEqualTo(2);
+    assertThat(result.getTotalCount()).isEqualTo(2);
+  }
+
+  @Test
+  void handlesEventsWithNullUabsEventId() {
+    auditPort.failedIds = List.of(1L, 2L);
+    SignalEvent event1 = event(1L, LocalDateTime.of(2024, 12, 3, 10, 0));
+    SignalEvent event2 = event(2L, LocalDateTime.of(2024, 12, 3, 11, 0));
+    event2.setUabsEventId(null);
+    eventRepository.save(event1);
+    eventRepository.save(event2);
+
+    JobResult result = service.retryFailedEvents("job-7", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+    assertThat(result.getTotalCount()).isEqualTo(2);
+  }
+
+  @Test
+  void sortsEventsByDateTimeThenUabsEventId() {
+    auditPort.failedIds = List.of(3L, 1L, 2L);
+    eventRepository.save(event(1L, LocalDateTime.of(2024, 12, 3, 12, 0)));
+    eventRepository.save(event(2L, LocalDateTime.of(2024, 12, 3, 11, 0)));
+    eventRepository.save(event(3L, LocalDateTime.of(2024, 12, 3, 10, 0)));
+
+    JobResult result = service.retryFailedEvents("job-8", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getSuccessCount()).isEqualTo(3);
+    assertThat(senderPort.sent).containsExactly(3L, 2L, 1L);
+  }
+
+  @Test
+  void handlesNullEventRecordDateTime() {
+    auditPort.failedIds = List.of(1L, 2L);
+    SignalEvent event1 = event(1L, null);
+    SignalEvent event2 = event(2L, LocalDateTime.of(2024, 12, 3, 11, 0));
+    eventRepository.save(event1);
+    eventRepository.save(event2);
+
+    JobResult result = service.retryFailedEvents("job-9", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getSuccessCount()).isEqualTo(2);
+  }
+
+  @Test
+  void handlesSendFailure() {
+    auditPort.failedIds = List.of(1L);
+    eventRepository.save(event(1L, LocalDateTime.of(2024, 12, 3, 10, 0)));
+    senderPort.shouldFail = true;
+
+    JobResult result = service.retryFailedEvents("job-10", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getSuccessCount()).isZero();
+    assertThat(result.getFailureCount()).isEqualTo(1);
+  }
+
+  @Test
+  void includesMissingCountInMessage() {
+    auditPort.failedIds = List.of(1L, 2L, 3L);
+    eventRepository.save(event(1L, LocalDateTime.of(2024, 12, 3, 10, 0)));
+
+    JobResult result = service.retryFailedEvents("job-11", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getMessage()).contains("missing=2");
+  }
+
+  @Test
+  void handlesAllEventsMissing() {
+    auditPort.failedIds = List.of(1L, 2L, 3L);
+
+    JobResult result = service.retryFailedEvents("job-12", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getSuccessCount()).isZero();
+    assertThat(result.getFailureCount()).isEqualTo(3);
+    assertThat(result.getTotalCount()).isEqualTo(3);
+    assertThat(result.getMessage()).contains("no matching signal events");
+  }
+
+  @Test
+  void handlesMixedSuccessAndFailure() {
+    auditPort.failedIds = List.of(1L, 2L, 3L);
+    eventRepository.save(event(1L, LocalDateTime.of(2024, 12, 3, 10, 0)));
+    eventRepository.save(event(2L, LocalDateTime.of(2024, 12, 3, 11, 0)));
+    senderPort.shouldFail = true;
+
+    JobResult result = service.retryFailedEvents("job-13", LocalDate.of(2024, 12, 3));
+
+    assertThat(result.getSuccessCount()).isZero();
+    assertThat(result.getFailureCount()).isEqualTo(3);
   }
 }

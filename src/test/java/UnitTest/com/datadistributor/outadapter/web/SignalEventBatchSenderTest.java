@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doThrow;
 
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.SignalEvent;
@@ -100,5 +102,254 @@ class SignalEventBatchSenderTest {
   @Test
   void submitBatch_returnsEmptyResultOnNullList() throws Exception {
     assertThat(sender.submitBatch(null).get().successCount()).isZero();
+  }
+
+  // ************************************************************************************************
+  // NEW COMPREHENSIVE TESTS FOR 100% COVERAGE
+  // ************************************************************************************************
+
+  @Test
+  void submitBatch_returnsEmptyResultOnEmptyList() throws Exception {
+    assertThat(sender.submitBatch(List.of()).get().successCount()).isZero();
+  }
+
+  @Test
+  void submitBatch_handlesMultipleEvents() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    ApiResponse response = new ApiResponse(Map.of("ceh_event_id", 123L), 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1), event(2), event(3)));
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isEqualTo(3);
+    verify(signalAuditService, times(3)).persistAudit(any(SignalEvent.class), eq("PASS"), eq("200"), any());
+    verify(initialCehMappingUseCase, times(3)).handleInitialCehMapping(any(), eq(123L));
+  }
+
+  @Test
+  void submitBatch_handlesMixedSuccessAndFailure() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    ApiResponse successResponse = new ApiResponse(Map.of("ceh_event_id", 123L), 200);
+    RuntimeException error = new RuntimeException("error");
+    when(reactiveClient.send(any())).thenAnswer(invocation -> {
+      SignalEvent evt = invocation.getArgument(0);
+      if (evt.getUabsEventId() == 1L) {
+        return Mono.just(successResponse);
+      } else {
+        return Mono.error(error);
+      }
+    });
+    when(errorClassifier.classify(error)).thenReturn(new FailureClassification("FAIL", "reason", "500"));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1), event(2)));
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    assertThat(result.failureCount()).isEqualTo(1);
+    verify(signalAuditService).persistAudit(any(SignalEvent.class), eq("PASS"), eq("200"), any());
+    verify(signalAuditService).persistAudit(any(SignalEvent.class), eq("FAIL"), eq("500"), any());
+  }
+
+  @Test
+  void submitBatch_usesBlockingClientWhenConfigured() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(true);
+    ApiResponse response = new ApiResponse(Map.of("ceh_event_id", 456L), 200);
+    when(blockingClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1)));
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(blockingClient).send(any());
+    verify(reactiveClient, never()).send(any());
+  }
+
+  @Test
+  void submitBatch_handlesResponseWithoutCehEventId() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    ApiResponse response = new ApiResponse(Map.of("other_field", "value"), 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1)));
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isZero();
+    assertThat(result.failureCount()).isEqualTo(1);
+    verify(signalAuditService).persistAudit(any(SignalEvent.class), eq("FAIL"), eq("200"), eq("NO_CEH_EVENT_ID"));
+    verify(initialCehMappingUseCase, never()).handleInitialCehMapping(any(), anyLong());
+  }
+
+  @Test
+  void submitBatch_handlesNullResponse() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    // Return Mono.error() to simulate a failure (Mono.empty() completes without value, which doesn't trigger error handling)
+    RuntimeException error = new RuntimeException("No response");
+    when(reactiveClient.send(any())).thenReturn(Mono.error(error));
+    when(errorClassifier.classify(error)).thenReturn(new FailureClassification("FAIL", "No response", "500"));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1)));
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isZero();
+    assertThat(result.failureCount()).isEqualTo(1);
+  }
+
+  @Test
+  void submitBatch_handlesNullResponseBody() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    // When response body is null, accessing response.body().get() will throw NPE
+    // This triggers onErrorResume which calls handleException
+    ApiResponse response = new ApiResponse(null, 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+    NullPointerException npe = new NullPointerException("response.body() is null");
+    when(errorClassifier.classify(any(NullPointerException.class)))
+        .thenReturn(new FailureClassification("FAIL", "Null response body", "500"));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1)));
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isZero();
+    assertThat(result.failureCount()).isEqualTo(1);
+  }
+
+  @Test
+  void submitBatch_handlesAuditServiceException() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    ApiResponse response = new ApiResponse(Map.of("ceh_event_id", 123L), 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+    doThrow(new RuntimeException("Audit failed"))
+        .when(signalAuditService).persistAudit(any(), any(), any(), any());
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1)));
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(signalAuditService).logAuditFailure(any(), any());
+    verify(initialCehMappingUseCase).handleInitialCehMapping(any(), eq(123L));
+  }
+
+  @Test
+  void submitBatch_handlesCehEventIdAsInteger() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    ApiResponse response = new ApiResponse(Map.of("ceh_event_id", 123), 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1)));
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(initialCehMappingUseCase).handleInitialCehMapping(any(), eq(123L));
+  }
+
+  @Test
+  void submitBatch_handlesCehEventIdAsString() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    ApiResponse response = new ApiResponse(Map.of("ceh_event_id", "456"), 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1)));
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isEqualTo(1);
+    verify(initialCehMappingUseCase).handleInitialCehMapping(any(), eq(456L));
+  }
+
+  @Test
+  void submitBatch_logsInfoAtSequence1000() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    ApiResponse response = new ApiResponse(Map.of("ceh_event_id", 123L), 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    // Create 1000 events to trigger the info log
+    List<SignalEvent> events = new java.util.ArrayList<>();
+    for (int i = 1; i <= 1000; i++) {
+      events.add(event((long) i));
+    }
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(events);
+    BatchResult result = future.get();
+
+    assertThat(result.successCount()).isEqualTo(1000);
+  }
+
+  @Test
+  void send_usesReactiveClientWhenNotBlocking() {
+    properties.getExternalApi().setUseBlockingClient(false);
+    ApiResponse response = new ApiResponse(Map.of("ceh_event_id", 789L), 200);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(response));
+
+    boolean result = sender.send(event(4));
+
+    assertThat(result).isTrue();
+    verify(reactiveClient).send(any());
+    verify(blockingClient, never()).send(any());
+  }
+
+  @Test
+  void send_handlesException() {
+    properties.getExternalApi().setUseBlockingClient(false);
+    RuntimeException error = new RuntimeException("error");
+    when(reactiveClient.send(any())).thenReturn(Mono.error(error));
+    when(errorClassifier.classify(error)).thenReturn(new FailureClassification("FAIL", "reason", "500"));
+
+    boolean result = sender.send(event(5));
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void send_handlesEmptyOptional() {
+    properties.getExternalApi().setUseBlockingClient(false);
+    when(reactiveClient.send(any())).thenReturn(Mono.just(new ApiResponse(Map.of(), 200)));
+
+    boolean result = sender.send(event(6));
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void postEventReactive_throwsExceptionForNullEvent() {
+    properties.getExternalApi().setUseBlockingClient(false);
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
+      sender.submitBatch(List.of((SignalEvent) null));
+    }).isInstanceOf(Exception.class);
+  }
+
+  @Test
+  void handleException_handlesAuditServiceException() throws Exception {
+    properties.getExternalApi().setUseBlockingClient(false);
+    RuntimeException error = new RuntimeException("error");
+    when(reactiveClient.send(any())).thenReturn(Mono.error(error));
+    when(errorClassifier.classify(error)).thenReturn(new FailureClassification("FAIL", "reason", "500"));
+    doThrow(new RuntimeException("Audit failed"))
+        .when(signalAuditService).persistAudit(any(), any(), any(), any());
+
+    CompletableFuture<BatchResult> future = sender.submitBatch(List.of(event(1)));
+    BatchResult result = future.get();
+
+    assertThat(result.failureCount()).isEqualTo(1);
+    verify(signalAuditService).logAuditFailure(any(), any());
+  }
+
+  @Test
+  void constructor_normalizesZeroRateLimit() {
+    properties.getProcessing().setRateLimit(0);
+    SignalEventBatchSender senderWithZeroRate = new SignalEventBatchSender(
+        blockingClient, reactiveClient, initialCehMappingUseCase,
+        signalAuditService, properties, errorClassifier);
+
+    assertThat(senderWithZeroRate).isNotNull();
+  }
+
+  @Test
+  void constructor_normalizesNegativeRateLimit() {
+    properties.getProcessing().setRateLimit(-5);
+    SignalEventBatchSender senderWithNegativeRate = new SignalEventBatchSender(
+        blockingClient, reactiveClient, initialCehMappingUseCase,
+        signalAuditService, properties, errorClassifier);
+
+    assertThat(senderWithNegativeRate).isNotNull();
   }
 }

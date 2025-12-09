@@ -148,4 +148,93 @@ class SignalEventRepositoryAdapterTest {
         .extracting(SignalEvent::getUabsEventId)
         .containsExactly(1L, 2L);
   }
+
+  // ************************************************************************************************
+  // NEW COMPREHENSIVE TESTS FOR 100% COVERAGE
+  // ************************************************************************************************
+
+  @Test
+  void getPreviousEvent_returnsEmptyWhenNoResults() {
+    when(jpaRepository.findPreviousEvent(eq(9L), any(), eq(PageRequest.of(0, 1))))
+        .thenReturn(List.of());
+
+    assertThat(adapter.getPreviousEvent(9L, LocalDateTime.now())).isEmpty();
+  }
+
+  @Test
+  void getEarliestOverlimitEvent_returnsEmptyWhenNoResults() {
+    when(jpaRepository.findBySignalIdAndEventStatusOrderByEventRecordDateTimeAsc(10L, "OVERLIMIT_SIGNAL"))
+        .thenReturn(List.of());
+
+    assertThat(adapter.getEarliestOverlimitEvent(10L)).isEmpty();
+  }
+
+  @Test
+  void findByUabsEventIdIn_handlesDuplicateIds() {
+    SignalEventJpaEntity entity1 = new SignalEventJpaEntity();
+    entity1.setUabsEventId(1L);
+    SignalEventJpaEntity entity2 = new SignalEventJpaEntity();
+    entity2.setUabsEventId(1L);
+    when(jpaRepository.findByUabsEventIdIn(List.of(1L, 1L))).thenReturn(List.of(entity1, entity2));
+
+    SignalEvent mapped1 = new SignalEvent();
+    mapped1.setUabsEventId(1L);
+    when(mapper.toDomain(entity1)).thenReturn(mapped1);
+    when(mapper.toDomain(entity2)).thenReturn(mapped1);
+
+    List<SignalEvent> result = adapter.findByUabsEventIdIn(List.of(1L, 1L));
+
+    assertThat(result).hasSize(2);
+    assertThat(result).extracting(SignalEvent::getUabsEventId).containsExactly(1L, 1L);
+  }
+
+  @Test
+  void findByUabsEventIdIn_handlesNullMappedEvents() {
+    SignalEventJpaEntity entity1 = new SignalEventJpaEntity();
+    entity1.setUabsEventId(1L);
+    SignalEventJpaEntity entity2 = new SignalEventJpaEntity();
+    entity2.setUabsEventId(2L);
+    when(jpaRepository.findByUabsEventIdIn(List.of(1L, 2L))).thenReturn(List.of(entity1, entity2));
+
+    SignalEvent mapped1 = new SignalEvent();
+    mapped1.setUabsEventId(1L);
+    when(mapper.toDomain(entity1)).thenReturn(mapped1);
+    when(mapper.toDomain(entity2)).thenReturn(null);
+
+    List<SignalEvent> result = adapter.findByUabsEventIdIn(List.of(1L, 2L));
+
+    assertThat(result).hasSize(1);
+    assertThat(result).extracting(SignalEvent::getUabsEventId).containsExactly(1L);
+  }
+
+  @Test
+  void findByUabsEventIdIn_handlesMissingEvents() {
+    SignalEventJpaEntity entity1 = new SignalEventJpaEntity();
+    entity1.setUabsEventId(1L);
+    when(jpaRepository.findByUabsEventIdIn(List.of(1L, 2L, 3L))).thenReturn(List.of(entity1));
+
+    SignalEvent mapped1 = new SignalEvent();
+    mapped1.setUabsEventId(1L);
+    when(mapper.toDomain(entity1)).thenReturn(mapped1);
+
+    List<SignalEvent> result = adapter.findByUabsEventIdIn(List.of(1L, 2L, 3L));
+
+    assertThat(result).hasSize(1);
+    assertThat(result).extracting(SignalEvent::getUabsEventId).containsExactly(1L);
+  }
+
+  @Test
+  void findByUabsEventIdIn_handlesNullUabsEventIdInDomain() {
+    SignalEventJpaEntity entity1 = new SignalEventJpaEntity();
+    entity1.setUabsEventId(1L);
+    when(jpaRepository.findByUabsEventIdIn(List.of(1L))).thenReturn(List.of(entity1));
+
+    SignalEvent mapped1 = new SignalEvent();
+    mapped1.setUabsEventId(null);
+    when(mapper.toDomain(entity1)).thenReturn(mapped1);
+
+    List<SignalEvent> result = adapter.findByUabsEventIdIn(List.of(1L));
+
+    assertThat(result).isEmpty();
+  }
 }
