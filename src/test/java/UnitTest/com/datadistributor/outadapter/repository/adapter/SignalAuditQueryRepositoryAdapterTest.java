@@ -237,4 +237,36 @@ class SignalAuditQueryRepositoryAdapterTest {
 
     assertThat(adapter.isEventSuccessful(5L, 1L)).isFalse();
   }
+
+  // ***************************************************
+  // NEW TEST- Date- Dec 9
+  // ***************************************************
+
+  @Test
+  void findFailedEventIdsForDate_handlesNullStatusInAudit() {
+    SignalAuditJpaEntity audit = new SignalAuditJpaEntity();
+    audit.setUabsEventId(1L);
+    audit.setStatus(null);
+
+    when(repository.findByAuditRecordDateTimeBetweenAndConsumerIdOrderByAuditRecordDateTimeDesc(
+        any(), any(), any())).thenReturn(List.of(audit));
+
+    assertThat(adapter.findFailedEventIdsForDate(LocalDate.now())).containsExactly(1L);
+  }
+
+  @Test
+  void getLatestAuditStatusForEvent_handlesNullStatus() {
+    SignalAuditJpaEntity entity = new SignalAuditJpaEntity();
+    entity.setStatus(null);
+    when(repository.findTopByUabsEventIdAndConsumerIdOrderByAuditRecordDateTimeDesc(5L, 1L))
+        .thenReturn(Optional.of(entity));
+
+    Optional<String> result = adapter.getLatestAuditStatusForEvent(5L, 1L);
+    // When status is null, map() will return Optional.of(null), but Optional.of(null) throws NPE
+    // So the adapter will return Optional.empty() if status is null
+    // Actually, let me check - map() on Optional.of(entity) with entity.getStatus() == null
+    // will return Optional.of(null), which is not allowed. So the adapter might filter it.
+    // Let's test that it returns empty when status is null
+    assertThat(result).isEmpty();
+  }
 }

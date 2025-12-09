@@ -72,4 +72,27 @@ class SignalEventMapperTest {
     assertThat(mapped.get(0)).extracting("uabsEventId").isEqualTo(1L);
     assertThat(mapped.get(1)).isNull();
   }
+
+  // ***************************************************
+  // NEW TEST- Date- Dec 9
+  // ***************************************************
+
+  @Test
+  void toDomain_handlesNullGrv() {
+    SignalEventJpaEntity entity = new SignalEventJpaEntity();
+    entity.setUabsEventId(1L);
+    
+    SignalJpaEntity signal = new SignalJpaEntity();
+    signal.setSignalId(2L);
+    entity.setSignal(signal);
+    
+    entity.setAgreementId(3L);
+    entity.setGrv(null);
+    
+    var domain = mapper.toDomain(entity);
+    
+    assertThat(domain.getUabsEventId()).isEqualTo(1L);
+    assertThat(domain.getSignalId()).isEqualTo(2L);
+    assertThat(domain.getGrv()).isNull();
+  }
 }

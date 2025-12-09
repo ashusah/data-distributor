@@ -54,4 +54,32 @@ class SignalEventRequestFactoryTest {
     assertThat(request.payload().getCustomerId()).isEqualTo(789L);
     assertThat(request.payload().getInitialEventId()).isEqualTo("init-1");
   }
+
+  // ***************************************************
+  // NEW TEST- Date- Dec 9
+  // ***************************************************
+
+  @Test
+  void build_constructsUriCorrectly() {
+    DataDistributorProperties properties = new DataDistributorProperties();
+    properties.getExternalApi().setBaseUrl("http://test.example.com");
+    properties.getExternalApi().setWriteSignalPath("/api/signals");
+
+    SignalEventPayloadFactory payloadFactory = new SignalEventPayloadFactory(initialCehQueryUseCase, accountBalanceQueryUseCase, properties);
+    SignalEventRequestFactory factory = new SignalEventRequestFactory(properties, payloadFactory);
+
+    SignalEvent event = new SignalEvent();
+    event.setAgreementId(123L);
+    event.setSignalId(456L);
+    event.setEventRecordDateTime(LocalDateTime.now());
+    event.setEventStatus("OVERLIMIT_SIGNAL");
+    event.setEventType("CONTRACT_UPDATE");
+
+    when(initialCehQueryUseCase.findInitialCehId(event.getSignalId())).thenReturn(Optional.of("init-1"));
+    when(accountBalanceQueryUseCase.findBcNumberByAgreementId(event.getAgreementId())).thenReturn(Optional.of(789L));
+
+    SignalEventRequest request = factory.build(event);
+
+    assertThat(request.uri()).isEqualTo("http://test.example.com/api/signals");
+  }
 }

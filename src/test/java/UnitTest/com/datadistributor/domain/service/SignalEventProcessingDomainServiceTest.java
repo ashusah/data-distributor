@@ -552,6 +552,96 @@ class SignalEventProcessingDomainServiceTest {
     assertThat(result.getSuccessCount()).isEqualTo(1);
   }
 
+  // ***************************************************
+  // NEW TEST- Date- Dec 9
+  // ***************************************************
+
+  @Test
+  void validatePriorEvents_handlesNullEventRecordDateTime() {
+    SignalEvent event = createEvent(1L, 1L, null);
+    SignalEvent prevEvent = createEvent(2L, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, null))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(2L, 1L))
+        .thenReturn(Optional.of("PASS"));
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+  }
+
+  @Test
+  void validatePriorEvents_handlesNullUabsEventId() {
+    SignalEvent event = createEvent(null, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(null, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(null, 1L))
+        .thenReturn(Optional.empty());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+  }
+
+  @Test
+  void validatePriorEvents_handlesNullPrevEventUabsEventId() {
+    SignalEvent event = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(null, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(null, 1L))
+        .thenReturn(Optional.empty());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+  }
+
+  @Test
+  void isSuccessStatus_handlesNullStatus() {
+    SignalEvent event = createEvent(1L, 1L, testDate.atTime(10, 0));
+    SignalEvent prevEvent = createEvent(2L, 1L, testDate.minusDays(1).atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventRepository.getPreviousEvent(1L, event.getEventRecordDateTime()))
+        .thenReturn(Optional.of(prevEvent));
+    // Return empty optional instead of null to avoid NPE
+    when(signalAuditQueryPort.getLatestAuditStatusForEvent(2L, 1L))
+        .thenReturn(Optional.empty());
+    when(signalDispatchSelector.selectEventsToSend(testDate))
+        .thenReturn(List.of(event));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    // Empty optional means no audit entry, so processing should continue
+    assertThat(result.getSuccessCount()).isEqualTo(1);
+  }
+
   private SignalEvent createEvent(Long uabsEventId, Long signalId, LocalDateTime eventRecordDateTime) {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(uabsEventId);

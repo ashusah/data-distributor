@@ -237,4 +237,28 @@ class SignalEventRepositoryAdapterTest {
 
     assertThat(result).isEmpty();
   }
+
+  // ***************************************************
+  // NEW TEST- Date- Dec 9
+  // ***************************************************
+
+  @Test
+  void getPreviousEvent_handlesNullMappedEvent() {
+    SignalEventJpaEntity entity = new SignalEventJpaEntity();
+    when(jpaRepository.findPreviousEvent(eq(9L), any(), eq(PageRequest.of(0, 1))))
+        .thenReturn(List.of(entity));
+    when(mapper.toDomain(entity)).thenReturn(null);
+
+    assertThat(adapter.getPreviousEvent(9L, LocalDateTime.now())).isEmpty();
+  }
+
+  @Test
+  void getEarliestOverlimitEvent_handlesNullMappedEvent() {
+    SignalEventJpaEntity entity = new SignalEventJpaEntity();
+    when(jpaRepository.findBySignalIdAndEventStatusOrderByEventRecordDateTimeAsc(10L, "OVERLIMIT_SIGNAL"))
+        .thenReturn(List.of(entity));
+    when(mapper.toDomain(entity)).thenReturn(null);
+
+    assertThat(adapter.getEarliestOverlimitEvent(10L)).isEmpty();
+  }
 }

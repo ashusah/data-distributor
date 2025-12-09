@@ -2,12 +2,14 @@ package com.datadistributor.outadapter.repository.adapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datadistributor.outadapter.entity.CehResponseInitialEventEntity;
 import com.datadistributor.outadapter.entity.CehResponseInitialEventId;
 import com.datadistributor.outadapter.repository.springjpa.CehResponseInitialEventRepository;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,5 +54,37 @@ class InitialCehMappingRepositoryAdapterTest {
     when(repository.findFirstByIdSignalId(any())).thenReturn(Optional.empty());
 
     assertThat(adapter.findInitialCehId(10L)).isEmpty();
+  }
+
+  // ***************************************************
+  // NEW TEST- Date- Dec 9
+  // ***************************************************
+
+  @Test
+  void saveInitialCehMapping_deletesAndRecreatesWhenExistingHasDifferentCehId() {
+    CehResponseInitialEventId existingId = new CehResponseInitialEventId("999", 5L);
+    CehResponseInitialEventEntity existing = new CehResponseInitialEventEntity(existingId);
+    when(repository.findByIdSignalId(5L)).thenReturn(List.of(existing));
+
+    adapter.saveInitialCehMapping(5L, 123L);
+
+    verify(repository).deleteAll(List.of(existing));
+    ArgumentCaptor<CehResponseInitialEventEntity> captor = ArgumentCaptor.forClass(CehResponseInitialEventEntity.class);
+    verify(repository).save(captor.capture());
+    CehResponseInitialEventEntity saved = captor.getValue();
+    assertThat(saved.getId().getSignalId()).isEqualTo(5L);
+    assertThat(saved.getId().getCehInitialEventId()).isEqualTo("123");
+  }
+
+  @Test
+  void saveInitialCehMapping_skipsWhenExistingHasSameCehId() {
+    CehResponseInitialEventId existingId = new CehResponseInitialEventId("123", 5L);
+    CehResponseInitialEventEntity existing = new CehResponseInitialEventEntity(existingId);
+    when(repository.findByIdSignalId(5L)).thenReturn(List.of(existing));
+
+    adapter.saveInitialCehMapping(5L, 123L);
+
+    verify(repository, never()).deleteAll(any());
+    verify(repository, never()).save(any());
   }
 }
