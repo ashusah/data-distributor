@@ -172,4 +172,8 @@ class KeyVaultSslContextProviderTest {
     verify(keyStoreLoader, never()).loadKeyStoreAndFactories();
   }
 
+  // **********************************************************
+  // ADDITIONAL TEST
+  // **********************************************************
+
 }

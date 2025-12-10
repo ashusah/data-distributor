@@ -37,4 +37,20 @@ class CehResponseInitialEventRepositoryTest {
 
     assertThat(repository.findFirstByIdSignalId(5L)).contains(entity);
   }
+
+  // **********************************************************
+  // ADDITIONAL TEST
+  // **********************************************************
+
+  @Test
+  void findFirstByIdSignalId_returnsFirstEntryWhenMultipleResults() {
+    CehResponseInitialEventEntity first = new CehResponseInitialEventEntity(
+        new CehResponseInitialEventId("1", 5L));
+    CehResponseInitialEventEntity second = new CehResponseInitialEventEntity(
+        new CehResponseInitialEventId("2", 5L));
+
+    when(repository.findByIdSignalId(5L)).thenReturn(List.of(first, second));
+
+    assertThat(repository.findFirstByIdSignalId(5L)).contains(first);
+  }
 }
