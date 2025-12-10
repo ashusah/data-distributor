@@ -1,6 +1,7 @@
 package com.datadistributor.application.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datadistributor.application.security.JavaSslContextProvider;
@@ -75,5 +76,20 @@ class FeignConfigurationTest {
 
     assertThat(client).isNotNull();
     assertThat(client).isInstanceOf(ApacheHttpClient.class);
+  }
+
+  // **********************************************************
+  // ADDITIONAL TEST
+  // **********************************************************
+
+  @Test
+  void feignClient_exposesCustomCloseableHttpClientWhenSslContextPresent() throws Exception {
+    SSLContext sslContext = SSLContext.getDefault();
+    when(javaSslContextProvider.sslContext()).thenReturn(Optional.of(sslContext));
+
+    Client client = config.feignClient(javaSslContextProvider);
+
+    assertThat(client).isInstanceOf(ApacheHttpClient.class);
+    verify(javaSslContextProvider).sslContext();
   }
 }

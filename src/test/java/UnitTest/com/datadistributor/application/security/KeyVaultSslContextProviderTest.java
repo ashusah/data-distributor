@@ -171,4 +171,5 @@ class KeyVaultSslContextProviderTest {
     // Should not call keyStoreLoader when cached
     verify(keyStoreLoader, never()).loadKeyStoreAndFactories();
   }
+
 }

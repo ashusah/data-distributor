@@ -1114,6 +1114,24 @@ class SignalEventProcessingDomainServiceTest {
     verify(signalEventBatchPort, times(2)).submitBatch(anyList());
   }
 
+  // **********************************************************
+  // ADDITIONAL TEST
+  // **********************************************************
+
+  @Test
+  void processEventsForDate_returnsProcessingCompleteMessage() {
+    SignalEvent event = createEvent(1L, 1L, testDate.atTime(10, 0));
+
+    when(signalEventRepository.getAllSignalEventsOfThisDate(testDate)).thenReturn(List.of());
+    when(signalDispatchSelector.selectEventsToSend(testDate)).thenReturn(List.of(event));
+    when(signalEventBatchPort.submitBatch(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(new BatchResult(1, 0)));
+
+    JobResult result = service.processEventsForDate("job-1", testDate);
+
+    assertThat(result.getMessage()).isEqualTo("Processing complete for " + testDate);
+  }
+
   private List<SignalEvent> createEvents(int start, int count) {
     List<SignalEvent> events = new ArrayList<>();
     for (int i = start; i < start + count; i++) {
@@ -1132,4 +1150,3 @@ class SignalEventProcessingDomainServiceTest {
     return event;
   }
 }
-

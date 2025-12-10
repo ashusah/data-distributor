@@ -87,4 +87,21 @@ class InitialCehMappingRepositoryAdapterTest {
     verify(repository, never()).deleteAll(any());
     verify(repository, never()).save(any());
   }
+
+  // **********************************************************
+  // ADDITIONAL TEST
+  // **********************************************************
+
+  @Test
+  void saveInitialCehMapping_handlesEmptyExistingListExplicitly() {
+    when(repository.findByIdSignalId(5L)).thenReturn(List.of());
+
+    adapter.saveInitialCehMapping(5L, 123L);
+
+    ArgumentCaptor<CehResponseInitialEventEntity> captor = ArgumentCaptor.forClass(CehResponseInitialEventEntity.class);
+    verify(repository).save(captor.capture());
+    verify(repository, never()).deleteAll(any());
+    assertThat(captor.getValue().getId().getSignalId()).isEqualTo(5L);
+    assertThat(captor.getValue().getId().getCehInitialEventId()).isEqualTo("123");
+  }
 }

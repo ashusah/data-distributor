@@ -269,4 +269,26 @@ class SignalAuditQueryRepositoryAdapterTest {
     // Let's test that it returns empty when status is null
     assertThat(result).isEmpty();
   }
+
+  // **********************************************************
+  // ADDITIONAL TEST
+  // **********************************************************
+
+  @Test
+  void findFailedEventIdsForDate_preservesOrderingForMultipleFailedEvents() {
+    SignalAuditJpaEntity first = new SignalAuditJpaEntity();
+    first.setUabsEventId(5L);
+    first.setStatus("FAIL");
+    first.setAuditRecordDateTime(LocalDateTime.now());
+
+    SignalAuditJpaEntity second = new SignalAuditJpaEntity();
+    second.setUabsEventId(3L);
+    second.setStatus("FAIL");
+    second.setAuditRecordDateTime(LocalDateTime.now().minusSeconds(10));
+
+    when(repository.findByAuditRecordDateTimeBetweenAndConsumerIdOrderByAuditRecordDateTimeDesc(
+        any(), any(), any())).thenReturn(List.of(first, second));
+
+    assertThat(adapter.findFailedEventIdsForDate(LocalDate.now())).containsExactly(5L, 3L);
+  }
 }

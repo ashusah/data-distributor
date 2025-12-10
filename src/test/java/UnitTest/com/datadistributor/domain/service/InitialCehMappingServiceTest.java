@@ -104,4 +104,20 @@ class InitialCehMappingServiceTest {
     assertThatCode(() -> service.handleInitialCehMapping(event, 99L)).doesNotThrowAnyException();
     verify(port).saveInitialCehMapping(10L, 99L);
   }
+
+  // **********************************************************
+  // ADDITIONAL TEST
+  // **********************************************************
+
+  @Test
+  void handlesOverlimitStatusCaseInsensitively() {
+    SignalEvent event = new SignalEvent();
+    event.setSignalId(10L);
+    event.setEventStatus("overlimit_signal");
+    when(port.findInitialCehId(10L)).thenReturn(Optional.empty());
+
+    service.handleInitialCehMapping(event, 99L);
+
+    verify(port).saveInitialCehMapping(10L, 99L);
+  }
 }

@@ -78,5 +78,28 @@ class KeyVaultJavaSslContextProviderTest {
     // Should return empty when SSL context initialization fails
     assertThat(provider.sslContext()).isEmpty();
   }
-}
 
+  // **********************************************************
+  // ADDITIONAL TEST
+  // *********************************************************
+
+  @Test
+  void returnsSslContextWhenKeyStoreFactoriesValid() throws Exception {
+    properties.getAzure().getKeyvault().setEnabled(true);
+    KeyStore ks = KeyStore.getInstance("PKCS12");
+    char[] password = "password".toCharArray();
+    ks.load(null, password);
+    KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+    kmf.init(ks, password);
+    TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+    tmf.init(ks);
+
+    KeyVaultKeyStoreLoader.KeyStoreFactories factories =
+        new KeyVaultKeyStoreLoader.KeyStoreFactories(ks, kmf, tmf, "test-cert");
+    when(keyStoreLoader.loadKeyStoreAndFactories()).thenReturn(Optional.of(factories));
+
+    KeyVaultJavaSslContextProvider provider = new KeyVaultJavaSslContextProvider(properties, keyStoreLoader);
+
+    assertThat(provider.sslContext()).isPresent();
+  }
+}
