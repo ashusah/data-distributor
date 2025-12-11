@@ -48,19 +48,14 @@ public class KeyVaultKeyStoreLoader {
         return Optional.empty();
       }
 
-      var credentialBuilder = new DefaultAzureCredentialBuilder();
+      DefaultAzureCredentialBuilder credentialBuilder = createCredentialBuilder();
       String managedIdentityClientId = kv.getClientId();
       if (managedIdentityClientId != null && !managedIdentityClientId.isBlank()) {
         credentialBuilder = credentialBuilder.managedIdentityClientId(managedIdentityClientId);
       }
 
-      SecretClient secretClient = new SecretClientBuilder()
-          .vaultUrl(vaultUrl)
-          .credential(credentialBuilder.build())
-          .buildClient();
-
-      KeyVaultSecret secret = secretClient.getSecret(certificateName);
-      byte[] pfxBytes = Base64.getDecoder().decode(secret.getValue());
+      String secretBase64 = fetchSecretValue(kv, vaultUrl, certificateName, credentialBuilder);
+      byte[] pfxBytes = Base64.getDecoder().decode(secretBase64);
 
       char[] pwd = certificatePassword == null ? new char[0] : certificatePassword.toCharArray();
       KeyStore ks = KeyStore.getInstance("PKCS12");
@@ -77,6 +72,23 @@ public class KeyVaultKeyStoreLoader {
       log.error("Failed to load KeyStore from Key Vault: {}", ex.getMessage(), ex);
       return Optional.empty();
     }
+  }
+
+  protected String fetchSecretValue(DataDistributorProperties.Azure.KeyVault kv,
+                                    String vaultUrl,
+                                    String certificateName,
+                                    DefaultAzureCredentialBuilder credentialBuilder) {
+    SecretClient secretClient = new SecretClientBuilder()
+        .vaultUrl(vaultUrl)
+        .credential(credentialBuilder.build())
+        .buildClient();
+
+    KeyVaultSecret secret = secretClient.getSecret(certificateName);
+    return secret.getValue();
+  }
+
+  protected DefaultAzureCredentialBuilder createCredentialBuilder() {
+    return new DefaultAzureCredentialBuilder();
   }
 
   /**
@@ -113,4 +125,3 @@ public class KeyVaultKeyStoreLoader {
     }
   }
 }
-

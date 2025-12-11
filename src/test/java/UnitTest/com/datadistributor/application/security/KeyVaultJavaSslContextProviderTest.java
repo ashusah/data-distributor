@@ -2,6 +2,7 @@ package com.datadistributor.application.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datadistributor.application.config.DataDistributorProperties;
@@ -100,6 +101,27 @@ class KeyVaultJavaSslContextProviderTest {
     KeyVaultJavaSslContextProvider provider = new KeyVaultJavaSslContextProvider(properties, keyStoreLoader);
 
     assertThat(provider.sslContext()).isPresent();
+  }
+
+  // **********************************************************
+  // ADDITIONAL TEST
+  // **********************************************************
+
+  @Test
+  void sslContext_isCachedAfterSuccessfulLoad() throws Exception {
+    properties.getAzure().getKeyvault().setEnabled(true);
+    KeyVaultKeyStoreLoader.KeyStoreFactories factories = KeyVaultTestSupport.createKeyStoreFactories();
+    when(keyStoreLoader.loadKeyStoreAndFactories()).thenReturn(Optional.of(factories));
+
+    KeyVaultJavaSslContextProvider provider = new KeyVaultJavaSslContextProvider(properties, keyStoreLoader);
+
+    Optional<SSLContext> first = provider.sslContext();
+    Optional<SSLContext> second = provider.sslContext();
+
+    assertThat(first).isPresent();
+    assertThat(second).isPresent();
+    assertThat(first.get()).isSameAs(second.get());
+    verify(keyStoreLoader).loadKeyStoreAndFactories();
   }
 
 }

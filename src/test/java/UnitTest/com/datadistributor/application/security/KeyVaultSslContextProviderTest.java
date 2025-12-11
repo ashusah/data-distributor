@@ -176,4 +176,19 @@ class KeyVaultSslContextProviderTest {
   // ADDITIONAL TEST
   // **********************************************************
 
+  @Test
+  void sslContext_buildsContextWhenKeyStoreFactoriesValid() throws Exception {
+    properties.getAzure().getKeyvault().setEnabled(true);
+    KeyVaultKeyStoreLoader.KeyStoreFactories factories = KeyVaultTestSupport.createKeyStoreFactories();
+    when(keyStoreLoader.loadKeyStoreAndFactories()).thenReturn(Optional.of(factories));
+
+    KeyVaultSslContextProvider provider = new KeyVaultSslContextProvider(properties, keyStoreLoader);
+
+    Optional<io.netty.handler.ssl.SslContext> result = provider.sslContext();
+
+    assertThat(result).isPresent();
+    assertThat(provider.sslContext()).isSameAs(result);
+    verify(keyStoreLoader).loadKeyStoreAndFactories();
+  }
+
 }
