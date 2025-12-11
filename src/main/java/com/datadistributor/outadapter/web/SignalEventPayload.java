@@ -15,6 +15,6 @@ public class SignalEventPayload {
   private String publisher;
   private String publisherId;
   private String status;
-  private String eventRecordDateTime;
+  private String submittedDateTime;
   private String type;
 }

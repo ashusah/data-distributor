@@ -53,7 +53,7 @@ class SignalEventPayloadFactoryAdditionalTest {
     assertThat(payload.getPublisher()).isEqualTo("PUB");
     assertThat(payload.getPublisherId()).isEqualTo("PUB_ID");
     assertThat(payload.getStatus()).isEqualTo("OVERLIMIT_SIGNAL");
-    assertThat(payload.getEventRecordDateTime()).isEqualTo("2024-01-01T00:00:00Z");
+    assertThat(payload.getSubmittedDateTime()).isEqualTo("2024-01-01T00:00:00Z");
     assertThat(payload.getType()).isEqualTo("TYPE");
   }
 }

@@ -28,7 +28,7 @@ public class SignalEventPayloadFactory {
         .findBcNumberByAgreementId(event.getAgreementId())
         .orElse(null);
 
-    String eventRecordDateTime = formatEventRecordDateTime(event.getEventRecordDateTime());
+    String submittedDateTime = formatEventRecordDateTime(event.getEventRecordDateTime());
 
     return new SignalEventPayload(
         event.getAgreementId(),
@@ -37,7 +37,7 @@ public class SignalEventPayloadFactory {
         properties.getExternalApi().getPublisher(),
         properties.getExternalApi().getPublisherId(),
         event.getEventStatus(),
-        eventRecordDateTime,
+        submittedDateTime,
         event.getEventType()
     );
   }
