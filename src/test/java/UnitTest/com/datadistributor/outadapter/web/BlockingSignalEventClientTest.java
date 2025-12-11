@@ -11,6 +11,8 @@ import org.mockito.MockitoAnnotations;
 
 class BlockingSignalEventClientTest {
 
+  private static final String EVENT_RECORD_DATE_TIME = "2025-01-03T10:00:00.000Z";
+
   @Mock
   private SignalEventFeignClient feignClient;
   @Mock
@@ -27,7 +29,7 @@ class BlockingSignalEventClientTest {
   @Test
   void send_wrapsFeignResponse() {
     SignalEvent event = new SignalEvent();
-    SignalEventPayload payload = new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type");
+    SignalEventPayload payload = new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", EVENT_RECORD_DATE_TIME, "type");
     SignalEventRequest request = new SignalEventRequest("http://example", payload);
     when(requestFactory.build(event)).thenReturn(request);
     when(feignClient.postSignalEvent(payload)).thenReturn(new SignalEventResponse(99L));
@@ -40,7 +42,7 @@ class BlockingSignalEventClientTest {
   @Test
   void send_handlesNullResponse() {
     SignalEvent event = new SignalEvent();
-    SignalEventPayload payload = new SignalEventPayload(1L, 2L, null, "pub", "pubId", "status", java.time.LocalDateTime.now(), "type");
+    SignalEventPayload payload = new SignalEventPayload(1L, 2L, null, "pub", "pubId", "status", EVENT_RECORD_DATE_TIME, "type");
     SignalEventRequest request = new SignalEventRequest("http://example", payload);
     when(requestFactory.build(event)).thenReturn(request);
     when(feignClient.postSignalEvent(payload)).thenReturn(null);

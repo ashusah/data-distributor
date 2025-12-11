@@ -19,6 +19,8 @@ import reactor.core.publisher.Mono;
 
 class ReactiveSignalEventClientTest {
 
+  private static final String EVENT_RECORD_DATE_TIME = "2025-01-03T10:00:00.000Z";
+
   @Mock
   private SignalEventRequestFactory requestFactory;
 
@@ -37,8 +39,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     ExchangeFunction exchange = r -> Mono.just(
@@ -65,8 +66,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     ExchangeFunction exchange = r -> Mono.just(
@@ -89,8 +89,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     ExchangeFunction exchange = r -> Mono.delay(java.time.Duration.ofSeconds(10))
@@ -109,8 +108,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     properties.getExternalApi().getRetry().setAttempts(2);
@@ -131,8 +129,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     ExchangeFunction exchange = r -> Mono.error(
@@ -152,8 +149,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     properties.getExternalApi().getRetry().setAttempts(1);
@@ -175,8 +171,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     properties.getExternalApi().getRetry().setAttempts(1);
@@ -198,8 +193,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     properties.getExternalApi().getRetry().setAttempts(1);
@@ -219,8 +213,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     properties.getExternalApi().getRetry().setAttempts(1);
@@ -241,8 +234,7 @@ class ReactiveSignalEventClientTest {
     SignalEvent event = new SignalEvent();
     event.setUabsEventId(5L);
 
-    SignalEventRequest request = new SignalEventRequest("http://example.com/endpoint",
-        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", java.time.LocalDateTime.now(), "type"));
+    SignalEventRequest request = buildRequest(event);
     when(requestFactory.build(event)).thenReturn(request);
 
     ExchangeFunction exchange = r -> Mono.error(new RuntimeException("Circuit breaker is open"));
@@ -253,5 +245,10 @@ class ReactiveSignalEventClientTest {
 
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> client.send(event).block())
         .isInstanceOf(Exception.class);
+  }
+
+  private SignalEventRequest buildRequest(SignalEvent event) {
+    return new SignalEventRequest("http://example.com/endpoint",
+        new SignalEventPayload(1L, 2L, "init", "pub", "pubId", "status", EVENT_RECORD_DATE_TIME, "type"));
   }
 }

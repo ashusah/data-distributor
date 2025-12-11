@@ -4,6 +4,8 @@ import com.datadistributor.domain.SignalEvent;
 import com.datadistributor.application.config.DataDistributorProperties;
 import com.datadistributor.domain.inport.AccountBalanceUseCase;
 import com.datadistributor.domain.inport.InitialCehQueryUseCase;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class SignalEventPayloadFactory {
+
+  private static final DateTimeFormatter ISO_INSTANT = DateTimeFormatter.ISO_INSTANT;
 
   private final InitialCehQueryUseCase initialCehQueryUseCase;
   private final AccountBalanceUseCase accountBalanceQueryUseCase;
@@ -24,6 +28,8 @@ public class SignalEventPayloadFactory {
         .findBcNumberByAgreementId(event.getAgreementId())
         .orElse(null);
 
+    String eventRecordDateTime = formatEventRecordDateTime(event.getEventRecordDateTime());
+
     return new SignalEventPayload(
         event.getAgreementId(),
         customerId,
@@ -31,8 +37,15 @@ public class SignalEventPayloadFactory {
         properties.getExternalApi().getPublisher(),
         properties.getExternalApi().getPublisherId(),
         event.getEventStatus(),
-        event.getEventRecordDateTime(),
+        eventRecordDateTime,
         event.getEventType()
     );
+  }
+
+  private String formatEventRecordDateTime(java.time.LocalDateTime dateTime) {
+    if (dateTime == null) {
+      return null;
+    }
+    return dateTime.atOffset(ZoneOffset.UTC).format(ISO_INSTANT);
   }
 }

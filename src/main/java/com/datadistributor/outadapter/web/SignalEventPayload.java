@@ -1,6 +1,5 @@
 package com.datadistributor.outadapter.web;
 
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -16,6 +15,6 @@ public class SignalEventPayload {
   private String publisher;
   private String publisherId;
   private String status;
-  private LocalDateTime submittedDateTime;
+  private String eventRecordDateTime;
   private String type;
 }
